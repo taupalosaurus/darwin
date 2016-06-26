@@ -1,6 +1,7 @@
 from firedrake import *
 import sys
 from numpy import linalg as LA
+import numpy as np
 
 
 
@@ -58,6 +59,9 @@ def computeAvgHessian(mesh, sol, t, tIni, tEnd, nbrSpl, M, hessian) :
     hessian.dat.data[...] += cof*H.dat.data
 
 
+
+
+
 def solveAdvec(mesh, solIni, tIni, tEnd):
     
     T = 6
@@ -74,7 +78,7 @@ def solveAdvec(mesh, solIni, tIni, tEnd):
     zero = Constant(0)
     bc = DirichletBC(Q, zero, 1)
 
-    nbrSpl = 10 
+    nbrSpl = 5 
     dtSpl = (tEnd-tIni)/(nbrSpl-1)
     
             
@@ -97,26 +101,31 @@ def solveAdvec(mesh, solIni, tIni, tEnd):
         c.interpolate(Expression([cxExpr, cyExpr]))
     
         dt = computeDtAdvec(mesh, cn, cxExpr, cyExpr)
-        if (t+dt > tEnd) : dt = tEnd - t
+        endSol = 0
+        if (t+dt > tEnd) : 
+            print "Trunc end run"
+            endSol = 1
+            dt = tEnd - t + + 1.e-5*dt
         doSpl = 0
-        if (int(t/dtSpl) != int((t+dt)/dtSpl)) :
+        if (not endSol) and (int(t/dtSpl) != int((t+dt)/dtSpl)) :
+            print "trunc sample"
             # truncation of the dt for hessian sampling
             stepSpl = int(t/dtSpl) + 1
-            dt = stepSpl*dtSpl - t
+            dt = stepSpl*dtSpl - t + 1.e-5*dt
             doSpl = 1
         
-        
+        print "DEBUG  t:  %1.3e -> %1.3e with dt: %1.7e" %(t, t+dt, dt)
         a = v*u*dx + 0.5*dt*(v*dot(c, grad(u))*dx)
         L = v*u0*dx - 0.5*dt*(v*dot(c, grad(u0))*dx)
         solve(a==L,u0)
         
         t += dt
         
-        if doSpl :
+        if doSpl or endSol :
             computeAvgHessian(mesh, u0, t, tIni, tEnd, nbrSpl, M, hessian) 
             
             
-    return [u0, 0]
+    return [u0, hessian]
     
     
     

@@ -51,6 +51,7 @@ def writeMetric(mesh, metric, coordSection, name):
     for iVer in range(NbrVer):
         off = coordSection.getOffset(iVer+vStart)/dim
         f.write("%f %f %f\n" % (metric.dat.data[off][0][0], metric.dat.data[off][0][1], metric.dat.data[off][1][1]))
+    f.write("\nEnd")
     f.close()
     
 def writeMetric2(mesh, metric, name):
@@ -65,6 +66,7 @@ def writeMetric2(mesh, metric, name):
     f.write("SolAtVertices\n%d\n1 3\n\n" % NbrVer)
     for iVer in range(NbrVer):
         f.write("%f %f %f\n" % (metric[iVer][0], metric[iVer][1], metric[iVer][2]))
+    f.write("\nEnd")
     f.close()
     
 def writeSol(mesh, u, coordSection, name):
@@ -82,6 +84,7 @@ def writeSol(mesh, u, coordSection, name):
 #        print "DEBUG  iVer: %d" % iVer
 #        print u.dat.data[off]
         f.write("%f\n" % (u.dat.data[off]))
+    f.write("\nEnd")
     f.close()
     
     
