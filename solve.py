@@ -7,14 +7,12 @@ import numpy as np
 
 
 
-def computeDtAdvec(mesh, cn, cxExpr, cyExpr):
-    
-    n = 50
+def computeDtAdvec(mesh, cn, cxExpr, cyExpr, options):
     
     nrmc = "sqrt((%s)*(%s)+(%s)*(%s))" % (cxExpr, cxExpr, cyExpr, cyExpr)
     cn.interpolate(Expression(nrmc))
     cmax = cn.dat.data.max()
-    hmin = 1./n #### TODO don't leave that !!!
+    hmin = 1./options.n #### TODO don't leave that !!!
     dt = 0.5*hmin/cmax
 
     return dt
@@ -62,9 +60,9 @@ def computeAvgHessian(mesh, sol, t, tIni, tEnd, nbrSpl, M, hessian) :
 
 
 
-def solveAdvec(mesh, solIni, tIni, tEnd):
+def solveAdvec(mesh, solIni, tIni, tEnd, options):
     
-    T = 6
+    T = options.T
     
     Q = FunctionSpace(mesh, "CG", 1)
     V = VectorFunctionSpace(mesh, "CG", 2)
@@ -78,10 +76,10 @@ def solveAdvec(mesh, solIni, tIni, tEnd):
     zero = Constant(0)
     bc = DirichletBC(Q, zero, 1)
 
-    nbrSpl = 5 
+    nbrSpl = options.nbrSpl 
     dtSpl = (tEnd-tIni)/(nbrSpl-1)
     
-            
+   
     step = 0
     print "####  step %d " % step ; sys.stdout.flush()
     
@@ -100,7 +98,7 @@ def solveAdvec(mesh, solIni, tIni, tEnd):
         cyExpr = "sin(2*pi*x[0])*sin(pi*x[1])*sin(pi*x[1])*cos(2*pi*%f)" % (t/T)
         c.interpolate(Expression([cxExpr, cyExpr]))
     
-        dt = computeDtAdvec(mesh, cn, cxExpr, cyExpr)
+        dt = computeDtAdvec(mesh, cn, cxExpr, cyExpr, options)
         endSol = 0
         if (t+dt > tEnd) : 
             print "Trunc end run"

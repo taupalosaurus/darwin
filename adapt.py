@@ -5,18 +5,18 @@ from numpy import linalg as LA
 
 
 
-def normalizeMetrics(hessianMetrics, meshes) :
+def normalizeMetrics(hessianMetrics, meshes, options) :
     
-    p = 2
-    N = 10000
-    a = 1000
+    p = options.p
+    N = options.N
+    a = options.a
     usa2 = 1/(a*a)
-    hmin = 0.005
+    hmin = options.hmin
     ushmin2 = 1/(hmin*hmin)
-    hmax = 0.3
+    hmax = options.hmax
     ushmax2 = 1/(hmax*hmax)
-    cofGlob = 0
     
+    cofGlob = 0
     for H, mesh in zip(hessianMetrics, meshes) :
         
         V = FunctionSpace(mesh, 'CG', 1)    
