@@ -19,11 +19,11 @@ def normalizeMetrics(hessianMetrics, meshes, options) :
     p = options.p
     N = options.N
     a = options.a
-    usa2 = 1/(a*a)
+    usa2 = 1./(a*a)
     hmin = options.hmin
-    ushmin2 = 1/(hmin*hmin)
+    ushmin2 = 1./(hmin*hmin)
     hmax = options.hmax
-    ushmax2 = 1/(hmax*hmax)
+    ushmax2 = 1./(hmax*hmax)
     
     cofGlob = 0
     for H, meshd in zip(hessianMetrics, meshes) :
@@ -41,7 +41,7 @@ def normalizeMetrics(hessianMetrics, meshes, options) :
         # intergrate determinant over space and assemble gloabl normalization term
         cofGlob += assemble(det*dx)
         
-    cofGlob = N/cofGlob
+    cofGlob = float(N)/cofGlob
     
     j = 0
     for H, meshd in zip(hessianMetrics, meshes) :

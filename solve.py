@@ -67,7 +67,7 @@ def computeAvgHessian(meshd, sol, t, tIni, tEnd, nbrSpl, M, hessian) :
 
     # sum with previous hessians
     # 3 cases if t=tIni or tEnd or between
-    cof = (tEnd-tIni)/(nbrSpl-1)
+    cof = float(tEnd-tIni)/(nbrSpl-1)
     if (t == tIni) or (t == tEnd) : cof *= 0.5
     hessian.dat.data[...] += cof*H.dat.data
 
@@ -94,7 +94,7 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
     bc = DirichletBC(Q, zero, 1)
 
     nbrSpl = options.nbrSpl 
-    dtSpl = (tEnd-tIni)/(nbrSpl-1)
+    dtSpl = float(tEnd-tIni)/(nbrSpl-1)
     
    
     step = 0

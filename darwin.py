@@ -24,8 +24,17 @@ INF = float("inf")
 def main() :
     
     
-    options = Options()
-    options.setSmallTest()
+    options = Options(nbrPtfxIte=4,
+                      nbrAdap = 40,
+                      nbrSpl = 20,
+                      p = 2,
+                      N = 60000,
+                      hmin = 0.005,
+                      hmax = 0.3,
+                      T = 6,
+                      Tend = 3,
+                      n = 60)
+#    options.setSmallTest()
                 
     mesh = Meshd(UnitSquareMesh(options.n, options.n))
 
@@ -65,7 +74,7 @@ def main() :
                     interpol(sol, meshOld, solIni, mesh)
             
             # solve 
-            dtAdap = options.Tend/options.nbrAdap
+            dtAdap = float(options.Tend)/options.nbrAdap
             tIni, tEnd  = (j-1)*dtAdap, j*dtAdap
             sol, hesMet = solveAdvec(mesh, solIni, tIni, tEnd, options)
             hessianMetrics.append(hesMet)                
