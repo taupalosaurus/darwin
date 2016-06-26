@@ -7,7 +7,7 @@ import numpy as np
 
 
 
-def computeDtAdvec(mesh, cn, cxExpr, cyExpr, options) :
+def computeDtAdvecOld(meshd, cn, cxExpr, cyExpr, options) :
     
     nrmc = "sqrt((%s)*(%s)+(%s)*(%s))" % (cxExpr, cxExpr, cyExpr, cyExpr)
     cn.interpolate(Expression(nrmc))
@@ -18,23 +18,25 @@ def computeDtAdvec(mesh, cn, cxExpr, cyExpr, options) :
     return dt
     
     
-def computeDtAdvecBetter(mesh, cn, cxExpr, cyExpr, altMin) :
+def computeDtAdvec(meshd, cn, cxExpr, cyExpr, options) :
     
     nrmc = "sqrt((%s)*(%s)+(%s)*(%s))" % (cxExpr, cxExpr, cyExpr, cyExpr)
     cn.interpolate(Expression(nrmc))
     
     dt = 1e10
-    for iVer in range(mesh.topology.num_vertices()):
-        dtloc = altMin.dat.data[iVer] / cn.dat.data[iVer]
+    for iVer in range(meshd.mesh.topology.num_vertices()):
+        dtloc = meshd.altMin.dat.data[iVer] / (cn.dat.data[iVer]+1e-10)
         dt = min(dt, dtloc)    
-    dt *= 0.8
+    dt *= options.cfl
     
     return dt
     
     
-def computeAvgHessian(mesh, sol, t, tIni, tEnd, nbrSpl, M, hessian) :
+def computeAvgHessian(meshd, sol, t, tIni, tEnd, nbrSpl, M, hessian) :
     
     print "DEBUG  computing hessian sample"
+    
+    mesh = meshd.mesh
     
     # compute the hessian
     # computation of the hessian
@@ -73,7 +75,9 @@ def computeAvgHessian(mesh, sol, t, tIni, tEnd, nbrSpl, M, hessian) :
 
 
 
-def solveAdvec(mesh, solIni, tIni, tEnd, options):
+def solveAdvec(meshd, solIni, tIni, tEnd, options):
+    
+    mesh = meshd.mesh
     
     T = options.T
     
@@ -100,7 +104,7 @@ def solveAdvec(mesh, solIni, tIni, tEnd, options):
     dt = 0
     u0.assign(solIni)
     
-    computeAvgHessian(mesh, u0, t, tIni, tEnd, nbrSpl, M, hessian) 
+    computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, M, hessian) 
     
     while t < tEnd:
     
@@ -111,7 +115,7 @@ def solveAdvec(mesh, solIni, tIni, tEnd, options):
         cyExpr = "sin(2*pi*x[0])*sin(pi*x[1])*sin(pi*x[1])*cos(2*pi*%f)" % (t/T)
         c.interpolate(Expression([cxExpr, cyExpr]))
     
-        dt = computeDtAdvec(mesh, cn, cxExpr, cyExpr, options)
+        dt = computeDtAdvec(meshd, cn, cxExpr, cyExpr, options)
         endSol = 0
         if (t+dt > tEnd) : 
             print "Trunc end run"
@@ -133,16 +137,16 @@ def solveAdvec(mesh, solIni, tIni, tEnd, options):
         t += dt
         
         if doSpl or endSol :
-            computeAvgHessian(mesh, u0, t, tIni, tEnd, nbrSpl, M, hessian) 
+            computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, M, hessian) 
             
             
     return [u0, hessian]
     
     
     
-def solIniAdvec(mesh):
+def solIniAdvec(meshd):
     
-    Q = FunctionSpace(mesh, "CG", 1)
+    Q = FunctionSpace(meshd.mesh, "CG", 1)
     icExpr = Expression("((x[0]-0.5)*(x[0]-0.5) + (x[1]-0.75)*(x[1]-0.75) < 0.15*0.15)")
     u0 = Function(Q).interpolate(icExpr)
     
@@ -150,35 +154,3 @@ def solIniAdvec(mesh):
     
     
     
-def computeVerMinAlt(mesh, section, altMin) :  # altMin is a Function(FunctionSpace(mesh, 'CG', 1))  
-    
-    plex = mesh._plex
-    vStart, vEnd = plex.getDepthStratum(0)
-    cStart, cEnd = plex.getHeightStratum(0)
-    
-    for v in range(0, vEnd-vStart) :
-        altMin.dat.data[iVer] = 1e10
-    
-    for c in range(cStart, cEnd) :
-        
-        ver = []
-        closure = plex.getTransitiveClosure(c)[0]
-        for cl in closure:
-            if cl >= vStart and cl < vEnd : 
-                off = section.getOffset(cl)/2
-                ver.append(mesh.coordinates.dat.data[off])
-        # normals to edges
-        ne.append([ver[0][1]-ver[1][1], ver[1][0]-ver[0][0]])
-        ne.append([ver[1][1]-ver[2][1], ver[2][0]-ver[1][0]])
-        ne.append([ver[2][1]-ver[0][1], ver[0][0]-ver[2][0]])
-        are = 0.5*abs(ne[0][0]*ne[1][1]-ne[0][1]*ne[1][0])
-        edgLenMax = ne[0][0]*ne[0][0] + ne[0][1]*ne[0][1]
-        edgLenMax = max(edgLenMax, ne[1][0]*ne[1][0] + ne[1][1]*ne[1][1])
-        edgLenMax = max(edgLenMax, ne[2][0]*ne[2][0] + ne[2][1]*ne[2][1])
-        altMinTri = 2*are/sqrt(edgLenMax)
-        for cl in closure:
-            if cl >= vStart and cl < vEnd : 
-                off = section.getOffset(cl)/2
-                altMin.dat.data[off] = min(altMin.dat.data[off], altMinTri)
-        
-        

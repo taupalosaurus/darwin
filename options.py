@@ -1,8 +1,8 @@
 class Options :
     
     
-    def setParam(self, 
-                 nbrPtfx=1,
+    def __init__(self, 
+                 nbrPtfxIte=1,
                  nbrAdap = 1,
                  nbrSpl = 0,
                  p = 2,
@@ -13,6 +13,7 @@ class Options :
                  T = 6,
                  Tend = 1,
                  n = 50,
+                 cfl = 0.95,
                  tSav = 0) :
     
         # adaptation parameters    
@@ -31,6 +32,7 @@ class Options :
         self.T = T
         self.Tend = Tend
         self.n = n
+        self.cfl = cfl
         self.tSav = tSav
         
                 
@@ -52,36 +54,6 @@ class Options :
         self.T = 6
         self.Tend = 0.1
         self.n = 50
+        self.cfl = 0.95
         self.tSav = 0
         
-    def setParam(self, 
-                 nbrPtfx=1,
-                 nbrAdap = 1,
-                 nbrSpl = 0,
-                 p = 2,
-                 N = 1000,
-                 a = 1000,
-                 hmin = 0.005,
-                 hmax = 0.3,
-                 T = 6,
-                 Tend = 1,
-                 n = 50,
-                 tSav = 0) :
-    
-        # adaptation parameters    
-        self.nbrPtfxIte = nbrPtfxIte
-        self.nbrAdap = nbrAdap
-        self.nbrSpl = nbrSpl 
-        
-        # metrics computation parameters
-        self.p = p
-        self.N = N
-        self.a = a
-        self.hmin = hmin
-        self.hmax = hmax
-        
-        # solver parameters
-        self.T = T
-        self.Tend = Tend
-        self.n = n
-        self.tSav = tSav

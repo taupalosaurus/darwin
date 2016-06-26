@@ -2,25 +2,24 @@ from firedrake import *
 import numpy as np
 
 
-def interpol(u, mesh, unew, meshnew):
+def interpol(u, meshd, unew, meshdnew):
+    
+    mesh = meshd.mesh
+    meshnew = meshdnew.mesh
     
     plexnew = meshnew._plex
     vStart, vEnd = plexnew.getDepthStratum(0)
-    
-    entity_dofs = np.zeros(meshnew._topological_dimension+1, dtype=np.int32)
-    entity_dofs[0] = meshnew.geometric_dimension()
-    coordSectionnew = meshnew._plex.createSection([1], entity_dofs, perm=meshnew.topology._plex_renumbering)
-        
+            
     notInDomain = []
     for v in range(vStart, vEnd):
-        offnew = coordSectionnew.getOffset(v)/2
+        offnew = meshdnew.section.getOffset(v)/2
         newCrd = meshnew.coordinates.dat.data[offnew]
         try :
             val = u.at(newCrd)
         except PointNotInDomainError :
             print "####  New vertex not in domain: %f %f" % (newCrd[0], newCrd[1])
             val = 0.
-            notInDomain.append([v,INF,-1])
+            notInDomain.append([v,INF,-1])   #TODO  I should store newCrd here instead of v
         finally :
             unew.dat.data[offnew] = val
     print "####  Number of points not in domain: %d / %d" % (len(notInDomain), meshnew.topology.num_vertices())
@@ -29,10 +28,6 @@ def interpol(u, mesh, unew, meshnew):
         plex = mesh._plex
         fStart, fEnd = plex.getHeightStratum(1)  # edges/facets
         vStart, vEnd = plex.getDepthStratum(0)
-        
-        entity_dofs = np.zeros(mesh._topological_dimension+1, dtype=np.int32)
-        entity_dofs[0] = mesh.geometric_dimension()
-        coordSection = mesh._plex.createSection([1], entity_dofs, perm=mesh.topology._plex_renumbering)
                 
         for f in range(fStart, fEnd):
             if plex.getLabelValue("boundary_ids", f) == -1 : continue
@@ -40,7 +35,7 @@ def interpol(u, mesh, unew, meshnew):
             crdE = [] # coordinates of the two vertices of the edge
             for cl in closure:
                 if cl >= vStart and cl < vEnd : 
-                    off = coordSection.getOffset(cl)/2
+                    off = meshd.section.getOffset(cl)/2
                     crdE.append(mesh.coordinates.dat.data[off])
             if len(crdE) != 2 : exit(16)
             vn =  [crdE[0][1]-crdE[1][1], crdE[0][0]-crdE[1][0]]# normal vector of the edge
@@ -48,7 +43,7 @@ def interpol(u, mesh, unew, meshnew):
             vn = [vn[0]/nrm, vn[1]/nrm]
             for nid in notInDomain:
                 v = nid[0]
-                offnew = coordSectionnew.getOffset(v)/2    
+                offnew = meshdnew.section.getOffset(v)/2    
                 crdP = meshnew.coordinates.dat.data[offnew]
                 dst = abs(vn[0] * (crdE[0][0] - crdP[0]) + vn[1] * (crdE[0][1] - crdP[1]))
                 if dst < nid[1]:
@@ -63,7 +58,7 @@ def interpol(u, mesh, unew, meshnew):
                         
         for nid in notInDomain :
             v = nid[0]
-            offnew = coordSectionnew.getOffset(v)/2    
+            offnew = meshdnew.section.getOffset(v)/2    
             crdP = meshnew.coordinates.dat.data[offnew]
             val = -1
             if nid[1] > 0.01:
@@ -76,7 +71,7 @@ def interpol(u, mesh, unew, meshnew):
                     val = [] # value of the function at the vertices of the traingle
                     for cl in closure:
                         if cl >= vStart and cl < vEnd :
-                            off = coordSection.getOffset(cl)/2
+                            off = meshd.section.getOffset(cl)/2
                             crdC.append(mesh.coordinates.dat.data[off])
                             val.append(u.dat.data[off])
                     # barycentric coordinates of v
@@ -101,7 +96,7 @@ def interpol(u, mesh, unew, meshnew):
                 val = [] # value of the function at the vertices of the edge
                 for cl in closure:
                     if cl >= vStart and cl < vEnd : 
-                        off = coordSection.getOffset(cl)/2
+                        off = meshd.section.getOffset(cl)/2
                         crdE.append(mesh.coordinates.dat.data[off])
                         val.append(u.dat.data[off])
                 if len(crdE) != 2 : 
