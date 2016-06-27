@@ -81,10 +81,16 @@ def main() :
             writeMesh(mesh, "bubble.%d" % j)
             writeSol(mesh, sol, "bubble.%d" % j)
             if options.nbrSav > 0 :
-            	for k in range(options.nbrSav+1) :
-            		kGlob = (j-1)*options.nbrSav + k
-            		os.rename("film.%d.mesh" % k, "film.%d.mesh" % kGlob)
-            		os.rename("film.%d.sol" % k, "film.%d.sol" % kGlob)
+                kIni = (j-1)*options.nbrSav
+                for k in range(options.nbrSav+1) :
+                    kGlob = kIni + k
+                    print "DEBUG   film.%d -> film.%d" %(k, kGlob)
+                    if k == 0 :
+                        os.rename("film_tmp.%d.mesh" % k, "film.%d.mesh" % kGlob)
+                    else :
+                        if os.path.exists("film.%d.mesh" % kGlob) : os.remove("film.%d.mesh" % kGlob)
+                        os.symlink("film.%d.mesh" % kIni, "film.%d.mesh" % kGlob)
+                    os.rename("film_tmp.%d.sol" % k, "film.%d.sol" % kGlob)
 
 
         
@@ -103,7 +109,7 @@ def main() :
                 newmesh = adaptInternal(meshes[j], metrics[j])
                 print "##### Adap procedure completed %d" %(j+1)
                 newmeshes.append(newmesh)
-                #writeMesh(newmesh, "newmesh.%d" % (j+1))
+                writeMesh(newmesh, "newmesh.%d" % (j+1))
         
         
         

@@ -1,5 +1,5 @@
 from firedrake import *
-import sys
+import sys, os, os.path
 from numpy import linalg as LA
 import numpy as np
 
@@ -112,8 +112,8 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
 
     if options.nbrSav > 0 :
         stepSpl = 0
-        writeMesh(meshd, "film.%d" % stepSpl)
-        writeSol(meshd, u0, "film.%d" % stepSpl)
+        writeMesh(meshd, "film_tmp.%d" % stepSpl)
+        writeSol(meshd, u0, "film_tmp.%d" % stepSpl)
     
     while t < tEnd:
     
@@ -134,8 +134,8 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
         if (not endSol) and (int(t/dtSav) != int((t+dt)/dtSav)) :
             print "DEBUG  Trunc dt for solution saving"
             # truncation of the dt for solution saving
-            stepSav = int(t/dtSav) + 1
-            dt = stepSav*dtSav - t + 1.e-5*dt
+            stepSav = int((t-tIni)/dtSav) + 1
+            dt = (tIni+stepSav*dtSav) - t + 1.e-5*dt
             doSav = 1
         doSpl = 0
         if (not endSol) and (int(t/dtSpl) != int((t+dt)/dtSpl)) :
@@ -156,8 +156,11 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
             computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, M, hessian) 
 
         if (options.nbrSav > 0) and (doSav or endSol) :
-            writeMesh(meshd, "film.%d" % stepSpl)
-            writeSol(meshd, u0, "film.%d" % stepSpl)
+            if endSol : stepSav += 1
+            #writeMesh(meshd, "film.%d" % stepSav)
+            if os.path.exists("film_tmp.%d.mesh" % stepSav) : os.remove("film_tmp.%d.mesh" % stepSav)
+            os.symlink("film_tmp.0.mesh", "film_tmp.%d.mesh" % stepSav)
+            writeSol(meshd, u0, "film_tmp.%d" % stepSav)
             
             
     return [u0, hessian]

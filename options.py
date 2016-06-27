@@ -47,7 +47,7 @@ class Options :
         self.p = 2
         self.N = 10000
         self.a = 1000
-        self.hmin = 0.005
+        self.hmin = 0.0001
         self.hmax = 0.3
         
         # solver parameters
