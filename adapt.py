@@ -41,6 +41,7 @@ def normalizeMetrics(hessianMetrics, meshes, options) :
         # intergrate determinant over space and assemble gloabl normalization term
         cofGlob += assemble(det*dx)
         
+    cofGlob *= pow(options.Tend, p*2./(2.*p+2.))
     cofGlob = float(N)/cofGlob
     
     j = 0

@@ -3,6 +3,8 @@ import sys
 from numpy import linalg as LA
 import numpy as np
 
+from inout import *
+
 
 
 
@@ -95,7 +97,9 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
 
     nbrSpl = options.nbrSpl 
     dtSpl = float(tEnd-tIni)/(nbrSpl-1)
-    
+
+    if options.nbrSav > 0 :
+        dtSav = float(tEnd-tIni)/(options.nbrSav)
    
     step = 0
     print "####  step %d " % step ; sys.stdout.flush()
@@ -105,6 +109,11 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
     u0.assign(solIni)
     
     computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, M, hessian) 
+
+    if options.nbrSav > 0 :
+        stepSpl = 0
+        writeMesh(meshd, "film.%d" % stepSpl)
+        writeSol(meshd, u0, "film.%d" % stepSpl)
     
     while t < tEnd:
     
@@ -118,12 +127,19 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
         dt = computeDtAdvec(meshd, cn, cxExpr, cyExpr, options)
         endSol = 0
         if (t+dt > tEnd) : 
-            print "Trunc end run"
+            print "DEBUG  Trunc dt to final time"
             endSol = 1
             dt = tEnd - t + + 1.e-5*dt
+        doSav = 0
+        if (not endSol) and (int(t/dtSav) != int((t+dt)/dtSav)) :
+            print "DEBUG  Trunc dt for solution saving"
+            # truncation of the dt for solution saving
+            stepSav = int(t/dtSav) + 1
+            dt = stepSav*dtSav - t + 1.e-5*dt
+            doSav = 1
         doSpl = 0
         if (not endSol) and (int(t/dtSpl) != int((t+dt)/dtSpl)) :
-            print "trunc sample"
+            print "DEBUG  Trunc dt for hessian sampling"
             # truncation of the dt for hessian sampling
             stepSpl = int(t/dtSpl) + 1
             dt = stepSpl*dtSpl - t + 1.e-5*dt
@@ -138,6 +154,10 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
         
         if doSpl or endSol :
             computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, M, hessian) 
+
+        if (options.nbrSav > 0) and (doSav or endSol) :
+            writeMesh(meshd, "film.%d" % stepSpl)
+            writeSol(meshd, u0, "film.%d" % stepSpl)
             
             
     return [u0, hessian]

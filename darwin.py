@@ -25,16 +25,16 @@ def main() :
     
     
     options = Options(nbrPtfxIte=4,
-                      nbrAdap = 40,
+                      nbrAdap = 50,
                       nbrSpl = 20,
                       p = 2,
                       N = 60000,
-                      hmin = 0.005,
+                      hmin = 0.008,
                       hmax = 0.3,
                       T = 6,
                       Tend = 3,
-                      n = 60)
-#    options.setSmallTest()
+                      n = 150)
+    options.setSmallTest()
                 
     mesh = Meshd(UnitSquareMesh(options.n, options.n))
 
@@ -78,9 +78,15 @@ def main() :
             tIni, tEnd  = (j-1)*dtAdap, j*dtAdap
             sol, hesMet = solveAdvec(mesh, solIni, tIni, tEnd, options)
             hessianMetrics.append(hesMet)                
-                        
             writeMesh(mesh, "bubble.%d" % j)
             writeSol(mesh, sol, "bubble.%d" % j)
+            if options.nbrSav > 0 :
+            	for k in range(options.nbrSav+1) :
+            		kGlob = (j-1)*options.nbrSav + k
+            		os.rename("film.%d.mesh" % k, "film.%d.mesh" % kGlob)
+            		os.rename("film.%d.sol" % k, "film.%d.sol" % kGlob)
+
+
         
         ######## End of the loop over sub-intervals
         
@@ -97,13 +103,20 @@ def main() :
                 newmesh = adaptInternal(meshes[j], metrics[j])
                 print "##### Adap procedure completed %d" %(j+1)
                 newmeshes.append(newmesh)
-                writeMesh(newmesh, "newmesh.%d" % (j+1))
+                #writeMesh(newmesh, "newmesh.%d" % (j+1))
         
         
         
         
 if __name__ == '__main__':
 
+
     parameters["pyop2_options"]["log_level"] = "WARNING"
 
+    tini = time.clock()
+
     main()
+
+    tend = time.clock()
+    ttotal = time.gmtime(tend-tini)
+    print "#####  TOTAL TIME : %ddays %dhours %dmin %dsec" %(ttotal[2]-1, ttotal[3], ttotal[4], ttotal[5])

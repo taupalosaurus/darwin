@@ -14,12 +14,12 @@ class Options :
                  Tend = 1,
                  n = 50,
                  cfl = 0.95,
-                 tSav = 0) :
+                 nbrSav = 0) :
     
         # adaptation parameters    
         self.nbrPtfxIte = nbrPtfxIte
         self.nbrAdap = nbrAdap
-        self.nbrSpl = nbrSpl 
+        self.nbrSpl = nbrSpl  # including initial and final samples, so this is the actual number
         
         # metrics computation parameters
         self.p = p
@@ -33,7 +33,7 @@ class Options :
         self.Tend = Tend
         self.n = n
         self.cfl = cfl
-        self.tSav = tSav
+        self.nbrSav = nbrSav  # initial save does not count (so I actually save nbrSav+1)
         
                 
     def setSmallTest(self):
@@ -55,5 +55,5 @@ class Options :
         self.Tend = 0.1
         self.n = 50
         self.cfl = 0.95
-        self.tSav = 0
+        self.nbrSav = 3
         
