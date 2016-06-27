@@ -148,6 +148,13 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
         print "DEBUG  t:  %1.3e -> %1.3e with dt: %1.7e" %(t, t+dt, dt)
         a = v*u*dx + 0.5*dt*(v*dot(c, grad(u))*dx)
         L = v*u0*dx - 0.5*dt*(v*dot(c, grad(u0))*dx)
+        # Add SUPG stabilization terms
+        ra = u + 0.5*dt*(dot(c, grad(u)))
+        rL = u0 - 0.5*dt*(dot(c, grad(u0)))
+        cnorm = sqrt(dot(c, c))
+        h = meshd.altMin
+        a += (h/(2.*cnorm))*dot(c, grad(v))*ra*dx
+        L += (h/(2.*cnorm))*dot(c, grad(v))*rL*dx
         solve(a==L,u0)
         
         t += dt
