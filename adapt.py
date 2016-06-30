@@ -17,7 +17,7 @@ def adaptInternal(meshd, metric) :
 def normalizeMetrics(hessianMetrics, meshes, options) :
     
     p = options.p
-    N = options.N
+    N = options.N*options.nbrAdap
     a = options.a
     usa2 = 1./(a*a)
     hmin = options.hmin
@@ -41,7 +41,7 @@ def normalizeMetrics(hessianMetrics, meshes, options) :
         # intergrate determinant over space and assemble gloabl normalization term
         cofGlob += assemble(det*dx)
         
-    cofGlob *= pow(options.Tend, p*2./(2.*p+2.))
+    #cofGlob *= options.Tend/options.nbrSpl
     cofGlob = float(N)/cofGlob
     
     j = 0

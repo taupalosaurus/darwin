@@ -45,9 +45,9 @@ class Options :
         
         # metrics computation parameters
         self.p = 2
-        self.N = 10000
+        self.N = 1000
         self.a = 1000
-        self.hmin = 0.0001
+        self.hmin = 0.001
         self.hmax = 0.3
         
         # solver parameters

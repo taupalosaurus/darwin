@@ -1,6 +1,7 @@
 from firedrake import *
 import numpy as np
 
+INF = float("inf")
 
 def interpol(u, meshd, unew, meshdnew):
     

@@ -50,6 +50,14 @@ def computeAvgHessian(meshd, sol, t, tIni, tEnd, nbrSpl, M, hessian) :
     H_prob = NonlinearVariationalProblem(L, H)
     H_solv = NonlinearVariationalSolver(H_prob)
     H_solv.solve()
+
+    detMax = 0
+    for iVer in range(mesh.topology.num_vertices()):
+        detLoc = H.dat.data[iVer][0,0]*H.dat.data[iVer][1,1] + H.dat.data[iVer][0,1]*H.dat.data[iVer][1,0]
+        detMax = max(detMax, abs(detLoc))
+
+    lbdmax = sqrt(detMax)
+    lbdmin = 1.e-20 * lbdmax
     
     # take the absolute value of the hessian
     for iVer in range(mesh.topology.num_vertices()):
@@ -58,8 +66,8 @@ def computeAvgHessian(meshd, sol, t, tIni, tEnd, nbrSpl, M, hessian) :
         hesLoc[0][1] = meanDiag
         hesLoc[1][0] = meanDiag
         lbd, v = LA.eig(hesLoc)
-        lbd1 = max(abs(lbd[0]), 1e-10)
-        lbd2 = max(abs(lbd[1]), 1e-10)
+        lbd1 = max(abs(lbd[0]), lbdmin)
+        lbd2 = max(abs(lbd[1]), lbdmin)
         det = lbd1*lbd2
         v1, v2 = v[0], v[1]
         H.dat.data[iVer][0,0] = lbd1*v1[0]*v1[0] + lbd2*v2[0]*v2[0];
@@ -102,12 +110,14 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
         dtSav = float(tEnd-tIni)/(options.nbrSav)
    
     step = 0
+    stepSav = 0
+    stepSpl = 0
     print "####  step %d " % step ; sys.stdout.flush()
     
     t = tIni
     dt = 0
     u0.assign(solIni)
-    
+
     computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, M, hessian) 
 
     if options.nbrSav > 0 :
@@ -125,25 +135,28 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
         c.interpolate(Expression([cxExpr, cyExpr]))
     
         dt = computeDtAdvec(meshd, cn, cxExpr, cyExpr, options)
+        if (options.nbrSav > 0) and (t < tIni+(stepSav+1)*dtSav) and (t+dt >= tIni+(stepSav+1)*dtSav) :
+            print "DEBUG  Trunc dt for solution saving"
+            # truncation of the dt for solution saving
+            dt = (tIni+(stepSav+1)*dtSav) - t + 1.e-5*dt
+        if (t < tIni+(stepSpl+1)*dtSpl) and (t+dt >= tIni+(stepSpl+1)*dtSpl) :
+            print "DEBUG  Trunc dt for hessian sampling"
+            # truncation of the dt for hessian sampling
+            dt = (tIni+(stepSpl+1)*dtSpl) - t + 1.e-5*dt
         endSol = 0
         if (t+dt > tEnd) : 
             print "DEBUG  Trunc dt to final time"
             endSol = 1
             dt = tEnd - t + + 1.e-5*dt
         doSav = 0
-        if (not endSol) and (int(t/dtSav) != int((t+dt)/dtSav)) :
-            print "DEBUG  Trunc dt for solution saving"
-            # truncation of the dt for solution saving
-            stepSav = int((t-tIni)/dtSav) + 1
-            dt = (tIni+stepSav*dtSav) - t + 1.e-5*dt
+        if (options.nbrSav > 0) and ((t < tIni+(stepSav+1)*dtSav) and (t+dt >= tIni+(stepSav+1)*dtSav) or endSol):
+            stepSav += 1
             doSav = 1
         doSpl = 0
-        if (not endSol) and (int(t/dtSpl) != int((t+dt)/dtSpl)) :
-            print "DEBUG  Trunc dt for hessian sampling"
-            # truncation of the dt for hessian sampling
-            stepSpl = int(t/dtSpl) + 1
-            dt = stepSpl*dtSpl - t + 1.e-5*dt
+        if ((t < tIni+(stepSpl+1)*dtSpl) and (t+dt >= tIni+(stepSpl+1)*dtSpl) or endSol) :
+            stepSpl += 1
             doSpl = 1
+
         
         print "DEBUG  t:  %1.3e -> %1.3e with dt: %1.7e" %(t, t+dt, dt)
         a = v*u*dx + 0.5*dt*(v*dot(c, grad(u))*dx)
@@ -159,11 +172,10 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
         
         t += dt
         
-        if doSpl or endSol :
+        if doSpl :
             computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, M, hessian) 
 
-        if (options.nbrSav > 0) and (doSav or endSol) :
-            if endSol : stepSav += 1
+        if doSav :
             #writeMesh(meshd, "film.%d" % stepSav)
             if os.path.exists("film_tmp.%d.mesh" % stepSav) : os.remove("film_tmp.%d.mesh" % stepSav)
             os.symlink("film_tmp.0.mesh", "film_tmp.%d.mesh" % stepSav)

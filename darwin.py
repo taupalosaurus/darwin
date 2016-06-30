@@ -24,24 +24,36 @@ INF = float("inf")
 def main() :
     
     
+#    options = Options(nbrPtfxIte=4,
+#                      nbrAdap = 60,
+#                      nbrSpl = 20,
+#                      p = 2,
+#                      N = 60000,
+#                      hmin = 0.0005,
+#                      hmax = 0.3,
+#                      T = 6,
+#                      Tend = 3,
+#                      n = 200,
+#                      nbrSav = 4)
     options = Options(nbrPtfxIte=4,
-                      nbrAdap = 50,
+                      nbrAdap = 20,
                       nbrSpl = 20,
                       p = 2,
-                      N = 60000,
-                      hmin = 0.008,
+                      N = 15000,
+                      hmin = 0.001,
                       hmax = 0.3,
                       T = 6,
-                      Tend = 3,
-                      n = 150)
-    options.setSmallTest()
+                      Tend = 1.5,
+                      n = 75,
+                      nbrSav = 0)
+#    options.setSmallTest()
                 
     mesh = Meshd(UnitSquareMesh(options.n, options.n))
 
     
     for i in range(options.nbrPtfxIte) :
         
-        print "\n\n\n##########  i: %d\n" % i
+        print "\n\n\n##########  i: %d\n" % i ; sys.stdout.flush()
         
         j = 0
         if i == 0 :
@@ -60,7 +72,7 @@ def main() :
         
         for j in range(1, options.nbrAdap+1) :
             
-            print "\n#####  j: %d\n" % j
+            print "\n#####  j: %d\n" % j ; sys.stdout.flush()
                                         
             # interpolate previous solution on new mesh if necessary (ie i > 0 and j > 0)
             if i == 0:
@@ -93,24 +105,23 @@ def main() :
                     os.rename("film_tmp.%d.sol" % k, "film.%d.sol" % kGlob)
 
 
-        
+
         ######## End of the loop over sub-intervals
         
         if i < (options.nbrPtfxIte-1) :
         
             # normalizeMetric
-            print "########## Metrics computation"
+            print "########## Metrics computation" ; sys.stdout.flush()
             metrics = normalizeMetrics(hessianMetrics, meshes, options)
         
             # generate meshes
-            print "########## Meshes generation"
+            print "########## Meshes generation" ; sys.stdout.flush()
             for j in range(options.nbrAdap) :
-                print "##### Adap procedure started %d" %(j+1)
+                print "##### Adap procedure started %d" %(j+1) ; sys.stdout.flush()
                 newmesh = adaptInternal(meshes[j], metrics[j])
-                print "##### Adap procedure completed %d" %(j+1)
+                print "##### Adap procedure completed %d" %(j+1) ; sys.stdout.flush()
                 newmeshes.append(newmesh)
                 writeMesh(newmesh, "newmesh.%d" % (j+1))
-        
         
         
         
