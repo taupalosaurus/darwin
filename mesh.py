@@ -8,8 +8,10 @@ class Meshd() :
     def __init__(self, mesh) :
         
         self.mesh = mesh 
+
+        self.V = FunctionSpace(self.mesh, 'CG', 1)
         
-        self.altMin = Function(FunctionSpace(self.mesh, 'CG', 1))
+        self.altMin = Function(self.V)
         
         entity_dofs = np.zeros(self.mesh._topological_dimension+1, dtype=np.int32)
         entity_dofs[0] = self.mesh.geometric_dimension()

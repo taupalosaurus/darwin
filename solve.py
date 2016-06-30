@@ -19,6 +19,7 @@ def computeDtAdvecOld(meshd, cn, cxExpr, cyExpr, options) :
 
     return dt
     
+
     
 def computeDtAdvec(meshd, cn, cxExpr, cyExpr, options) :
     
@@ -30,32 +31,32 @@ def computeDtAdvec(meshd, cn, cxExpr, cyExpr, options) :
     dt = (meshd.altMin.dat.data / (cn.dat.data+1e-10)).min()
     dt *= options.cfl
 
+    return dt
 
     
-    return dt
     
+def computeAvgHessian(meshd, sol, t, tIni, tEnd, nbrSpl, H, hessian) :
     
-def computeAvgHessian(meshd, sol, t, tIni, tEnd, nbrSpl, M, hessian) :
-    
-    print "DEBUG  computing hessian sample"
+    print "DEBUG  hessian-metric assembly"
     
     mesh = meshd.mesh
     
-    # compute the hessian
-    # computation of the hessian
-    sigma = TestFunction(M)
-    H = Function(M)
-    n = FacetNormal(mesh)
-    L = inner(sigma, H)*dx
-    L += inner(div(sigma), grad(sol))*dx - (sigma[0, 1]*n[1]*sol.dx(0) + sigma[1, 0]*n[0]*sol.dx(1))*ds
-    H_prob = NonlinearVariationalProblem(L, H)
-    H_solv = NonlinearVariationalSolver(H_prob)
-    H_solv.solve()
+#    # compute the hessian
+#    # computation of the hessian
+#    sigma = TestFunction(M)
+#    H = Function(M)
+#    n = FacetNormal(mesh)
+#    L = inner(sigma, H)*dx
+#    L += inner(div(sigma), grad(sol))*dx - (sigma[0, 1]*n[1]*sol.dx(0) + sigma[1, 0]*n[0]*sol.dx(1))*ds
+#    H_prob = NonlinearVariationalProblem(L, H)
+#    H_solv = NonlinearVariationalSolver(H_prob)
+#    H_solv.solve()
 
-    detMax = 0
-    for iVer in range(mesh.topology.num_vertices()):
-        detLoc = H.dat.data[iVer][0,0]*H.dat.data[iVer][1,1] + H.dat.data[iVer][0,1]*H.dat.data[iVer][1,0]
-        detMax = max(detMax, abs(detLoc))
+    detMax = Function(meshd.V).interpolate(abs(det(H))).dat.data.max()   
+#    detMax = 0
+#    for iVer in range(mesh.topology.num_vertices()):
+#        detLoc = H.dat.data[iVer][0,0]*H.dat.data[iVer][1,1] + H.dat.data[iVer][0,1]*H.dat.data[iVer][1,0]
+#        detMax = max(detMax, abs(detLoc))
 
     lbdmax = sqrt(detMax)
     lbdmin = 1.e-20 * lbdmax
@@ -69,7 +70,7 @@ def computeAvgHessian(meshd, sol, t, tIni, tEnd, nbrSpl, M, hessian) :
         lbd, v = LA.eig(hesLoc)
         lbd1 = max(abs(lbd[0]), lbdmin)
         lbd2 = max(abs(lbd[1]), lbdmin)
-        det = lbd1*lbd2
+#        det = lbd1*lbd2
         v1, v2 = v[0], v[1]
         H.dat.data[iVer][0,0] = lbd1*v1[0]*v1[0] + lbd2*v2[0]*v2[0];
         H.dat.data[iVer][0,1] = lbd1*v1[0]*v1[1] + lbd2*v2[0]*v2[1];
@@ -139,7 +140,15 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
     dt = 0
     u0.assign(solIni)
 
-    computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, M, hessian) 
+    sigma = TestFunction(M)
+    H = Function(M)
+    n = FacetNormal(mesh)
+    Lh = inner(sigma, H)*dx
+    Lh += inner(div(sigma), grad(u0))*dx - (sigma[0, 1]*n[1]*u0.dx(0) + sigma[1, 0]*n[0]*u0.dx(1))*ds
+    H_prob = NonlinearVariationalProblem(Lh, H)
+    H_solv = NonlinearVariationalSolver(H_prob)
+    H_solv.solve()
+    computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, H, hessian) 
 
     if options.nbrSav > 0 :
         stepSpl = 0
@@ -196,7 +205,8 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
         t += dt
         
         if doSpl :
-            computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, M, hessian) 
+            H_solv.solve()
+            computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, H, hessian) 
 
         if doSav :
             #writeMesh(meshd, "film.%d" % stepSav)
