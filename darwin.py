@@ -35,15 +35,15 @@ def main() :
 #                      Tend = 3,
 #                      n = 200,
 #                      nbrSav = 4)
-    options = Options(nbrPtfxIte=4,
-                      nbrAdap = 20,
+    options = Options(nbrPtfxIte=3,
+                      nbrAdap = 40,
                       nbrSpl = 20,
                       p = 2,
                       N = 15000,
                       hmin = 0.001,
                       hmax = 0.3,
                       T = 6,
-                      Tend = 1.5,
+                      Tend = 3,
                       n = 75,
                       nbrSav = 0)
 #    options.setSmallTest()

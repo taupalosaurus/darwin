@@ -30,16 +30,21 @@ def normalizeMetrics(hessianMetrics, meshes, options) :
         
         mesh = meshd.mesh
         V = FunctionSpace(mesh, 'CG', 1)    
-        det = Function(V)
+        detH = Function(V)
         # compute determinant
-        for iVer in range(mesh.topology.num_vertices()):
-            hesLoc = H.dat.data[iVer]
-            detLoc = hesLoc[0,0]*hesLoc[1,1] - hesLoc[0,1]*hesLoc[1,0]
-            H.dat.data[iVer] *= pow(detLoc, -1./(2*p+2))
-            det.dat.data[iVer] = pow(detLoc, float(p)/(2*p+2))
+        detH.interpolate(det(H))
+        detH_pow1 = np.power(detH.dat.data, -1./(2*p+2))
+        H.dat.data[...] *= detH_pow1[:, np.newaxis, np.newaxis]
+        detH.dat.data[...] = np.power(detH.dat.data, float(p)/(2*p+2))
+
+#        for iVer in range(mesh.topology.num_vertices()):
+#            hesLoc = H.dat.data[iVer]
+#            detLoc = hesLoc[0,0]*hesLoc[1,1] - hesLoc[0,1]*hesLoc[1,0]
+#            H.dat.data[iVer] *= pow(detLoc, -1./(2*p+2))
+#            det.dat.data[iVer] = pow(detLoc, float(p)/(2*p+2))
         
         # intergrate determinant over space and assemble gloabl normalization term
-        cofGlob += assemble(det*dx)
+        cofGlob += assemble(detH*dx)
         
     #cofGlob *= options.Tend/options.nbrSpl
     cofGlob = float(N)/cofGlob
