@@ -15,8 +15,9 @@ class Meshd() :
         entity_dofs[0] = self.mesh.geometric_dimension()
         self.section = self.mesh._plex.createSection([1], entity_dofs, perm=self.mesh.topology._plex_renumbering)
         
-        self.computeVerMinAlt()
-        
+        #self.computeVerMinAlt()
+        self.altMin.interpolate(2*CellVolume(self.mesh)/MaxCellEdgeLength(self.mesh))
+
         
     def computeVerMinAlt(self) :  # altMin is a Function(FunctionSpace(mesh, 'CG', 1))  
     
