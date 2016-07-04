@@ -1,9 +1,11 @@
 from firedrake import *
+import pyop2 as op2
 import sys, os, os.path
 from numpy import linalg as LA
 import numpy as np
 
 from inout import *
+from hessian import *
 
 
 
@@ -35,7 +37,7 @@ def computeDtAdvec(meshd, cn, cxExpr, cyExpr, options) :
 
     
     
-def computeAvgHessian(meshd, sol, t, tIni, tEnd, nbrSpl, H, hessian) :
+def computeAvgHessian(meshd, sol, t, tIni, tEnd, nbrSpl, H, hessian, options) :
     
     print "DEBUG  hessian-metric assembly"
     
@@ -45,26 +47,19 @@ def computeAvgHessian(meshd, sol, t, tIni, tEnd, nbrSpl, H, hessian) :
     lbdmax = sqrt(detMax)
     lbdmin = 1.e-20 * lbdmax
     
-    # take the absolute value of the hessian
-    for iVer in range(mesh.topology.num_vertices()):
-        hesLoc = H.dat.data[iVer]
-        meanDiag = 0.5*(hesLoc[0][1] + hesLoc[1][0]);
-        hesLoc[0][1] = meanDiag
-        hesLoc[1][0] = meanDiag
-        lbd, v = LA.eig(hesLoc)
-        lbd1 = max(abs(lbd[0]), lbdmin)
-        lbd2 = max(abs(lbd[1]), lbdmin)
-        v1, v2 = v[0], v[1]
-        H.dat.data[iVer][0,0] = lbd1*v1[0]*v1[0] + lbd2*v2[0]*v2[0];
-        H.dat.data[iVer][0,1] = lbd1*v1[0]*v1[1] + lbd2*v2[0]*v2[1];
-        H.dat.data[iVer][1,0] = H.dat.data[iVer][0,1]
-        H.dat.data[iVer][1,1] = lbd1*v1[1]*v1[1] + lbd2*v2[1]*v2[1];
+    lbdMin = op2.Global(1, lbdmin, dtype=float);
+    op2.par_loop(options.absValHessian_kernel, H.node_set().superset, H.dat(op2.RW), lbdMin(op2.READ))
 
     # sum with previous hessians
     # 3 cases: if t=tIni or tEnd or in between
     cof = float(tEnd-tIni)/(nbrSpl-1)
     if (t == tIni) or (t == tEnd) : cof *= 0.5
     hessian.dat.data[...] += cof*H.dat.data
+
+    if (np.isnan(hessian.dat.data).max()) :
+        print "DEBUG    H is nan!!!!"
+    if (np.isinf(hessian.dat.data).max()) :
+        print "DEBUG    H is inf!!!!"
 
 
 
@@ -132,7 +127,7 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
 
     if options.algo == 1:
         H_solv.solve()
-        computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, H, hessian) 
+        computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, H, hessian, options) 
 
     if options.nbrSav > 0 :
         stepSpl = 0
@@ -186,7 +181,7 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
         
         if doSpl :
             H_solv.solve()
-            computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, H, hessian) 
+            computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, H, hessian, options) 
 
         if doSav :
             #writeMesh(meshd, "film.%d" % stepSav)

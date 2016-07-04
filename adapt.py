@@ -4,6 +4,8 @@ from inout import *
 from mesh import *
 from numpy import linalg as LA
 
+from hessian import *
+
 
 
 def adaptInternal(meshd, metric) :
@@ -36,18 +38,15 @@ def normalizeUnsteadyMetrics(hessianMetrics, meshes, options) :
         detH_pow1 = np.power(detH.dat.data, -1./(2*p+2))
         H.dat.data[...] *= detH_pow1[:, np.newaxis, np.newaxis]
         detH.dat.data[...] = np.power(detH.dat.data, float(p)/(2*p+2))
-
-#        for iVer in range(mesh.topology.num_vertices()):
-#            hesLoc = H.dat.data[iVer]
-#            detLoc = hesLoc[0,0]*hesLoc[1,1] - hesLoc[0,1]*hesLoc[1,0]
-#            H.dat.data[iVer] *= pow(detLoc, -1./(2*p+2))
-#            det.dat.data[iVer] = pow(detLoc, float(p)/(2*p+2))
         
         # intergrate determinant over space and assemble gloabl normalization term
         cofGlob += assemble(detH*dx)
         
-    #cofGlob *= options.Tend/options.nbrSpl
     cofGlob = float(N)/cofGlob
+
+    lbdMin = op2.Global(1, ushmax2, dtype=float);
+    lbdMax = op2.Global(1, ushmin2, dtype=float);
+    rat = op2.Global(1, usa2, dtype=float);
     
     j = 0
     for H, meshd in zip(hessianMetrics, meshes) :
@@ -55,21 +54,8 @@ def normalizeUnsteadyMetrics(hessianMetrics, meshes, options) :
         mesh = meshd.mesh
         j += 1
         H.dat.data[...] *= cofGlob
-        
-        for iVer in range(mesh.topology.num_vertices()):
-            lbd, v = LA.eig(H.dat.data[iVer])
-            # truncation of eigenvalues
-            lbd1 = min(ushmin2, max(ushmax2,lbd[0]))
-            lbd2 = min(ushmin2, max(ushmax2,lbd[1]))
-            maxLbd = max(lbd1, lbd2)
-            lbd1 = max(lbd1, usa2*maxLbd)
-            lbd2 = max(lbd2, usa2*maxLbd)
-            v1, v2 = v[0], v[1]
-            # reconstruction of |Hu|
-            H.dat.data[iVer][0,0] = lbd1*v1[0]*v1[0] + lbd2*v2[0]*v2[0];
-            H.dat.data[iVer][0,1] = lbd1*v1[0]*v1[1] + lbd2*v2[0]*v2[1];
-            H.dat.data[iVer][1,0] = H.dat.data[iVer][0,1]
-            H.dat.data[iVer][1,1] = lbd1*v1[1]*v1[1] + lbd2*v2[1]*v2[1];
+
+        op2.par_loop(options.absTruncMetric_kernel, H.node_set().superset, H.dat(op2.RW), lbdMin(op2.READ), lbdMax(op2.READ), rat(op2.READ))
         
 #        writeMesh(meshd, "metric.%d" % j)
 #        writeMetric(meshd, H, "metric.%d" % j)

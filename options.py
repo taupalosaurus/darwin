@@ -1,3 +1,6 @@
+import pyop2 as op2
+from hessian import *
+
 class Options :
     
     
@@ -49,6 +52,46 @@ class Options :
         if nbrSavTot > 0:
             self.dtSav = self.Tend/self.nbrSavTot
             self.nbrSav = 0 
+
+
+
+        op2.init()
+        self.absValHessian_kernel = op2.Kernel("""
+void absValHessian(double * hess, double *lbdMin) {
+  
+  double lmin = *lbdMin;
+  
+%s
+%s
+%s
+%s
+
+}
+""" % (computeEigVal_str, absValueHessian_str, truncLowHessian_str, rebuildHessian_str), "absValHessian")
+
+
+
+#        usa2 = 1./(self.a*self.a)
+#        ushmin2 = 1./(self.hmin*self.hmin)
+#        ushmax2 = 1./(self.hmax*self.hmax)
+#        op2.Const(1, ushmax2, dtype=float, name="lbdMin");
+#        op2.Const(1, ushmin2, dtype=float, name="lbdMax");
+#        op2.Const(1, usa2, dtype=float, name="usa2");
+        self.absTruncMetric_kernel = op2.Kernel("""
+void absTruncMetric_kernel(double * hess, double *lbdmin, double *lbdmax, double *usa2_p) {
+    
+    double lmin = *lbdmin;
+    double lmax = *lbdmax;
+    double usa2 = *usa2_p;
+%s
+%s
+%s
+%s
+%s
+
+}
+""" % (computeEigVal_str, truncLowHessian_str, truncHighHessian_str, truncRatioHessian_str, rebuildHessian_str), "absTruncMetric_kernel")
+
                 
     def setSmallTest(self):
         

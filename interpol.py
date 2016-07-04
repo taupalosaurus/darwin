@@ -15,6 +15,7 @@ def interpol(u, meshd, unew, meshdnew):
     for v in range(vStart, vEnd):
         offnew = meshdnew.section.getOffset(v)/2
         newCrd = meshnew.coordinates.dat.data[offnew]
+        val = u.at(newCrd)
         try :
             val = u.at(newCrd)
         except PointNotInDomainError :

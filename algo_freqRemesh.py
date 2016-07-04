@@ -1,3 +1,4 @@
+from firedrake import *
 import numpy as np
 from numpy import linalg as LA
 import sys, os, time
@@ -9,12 +10,6 @@ from solve import *
 from adapt import *
 from interpol import *
 
-t0 = time.clock()
-from firedrake import *
-tloadfdk = time.clock()
-print "## module firedrake loaded (%ds)" % (tloadfdk - t0); sys.stdout.flush()
-
-INF = float("inf")
 
 
 

@@ -6,7 +6,7 @@ from options import *
 from mesh import *
 from inout import *
 from algo_ptfx import *
-from algo_freqRemesh import 
+from algo_freqRemesh import *
 from solve import *
 from adapt import *
 from interpol import *
@@ -29,29 +29,29 @@ def main() :
 
     options = Options(algo=1,
                       nbrPtfxIte=3,
-                      nbrAdap = 40,
+                      nbrAdap = 100,
                       nbrSpl = 20,
                       p = 2,
-                      N = 15000,
-                      hmin = 0.001,
+                      N = 50000,
+                      hmin = 0.0008,
                       hmax = 0.3,
                       T = 6,
-                      Tend = 3,
-                      n = 75,
-                      nbrSav = 0)
-    options = Options( algo = 2,
-                       adaptStepFreq = 3,
-                       p = 2,
-                       N = 100,
-                       a = 1000,
-                       hmin = 0.001,
-                       hmax = 0.3,
-                       steadyMetric = 1,
-                       T = 6,
-                       Tend = 1,
-                       n = 150,
-                       cfl = 0.95,
-                       nbrSavTot = 150)
+                      Tend = 6,
+                      n = 250,
+                      nbrSav = 3)
+#    options = Options( algo = 2,
+#                       adaptStepFreq = 3,
+#                       p = 2,
+#                       N = 100,
+#                       a = 1000,
+#                       hmin = 0.001,
+#                       hmax = 0.3,
+#                       steadyMetric = 1,
+#                       T = 6,
+#                       Tend = 1,
+#                       n = 150,
+#                       cfl = 0.95,
+#                       nbrSavTot = 150)
 #    options.setSmallTest()
                 
     if options.algo == 1 :
