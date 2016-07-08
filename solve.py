@@ -131,8 +131,8 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
 
     if options.nbrSav > 0 :
         stepSpl = 0
-        writeMesh(meshd, "film_tmp.%d" % stepSpl)
-        writeSol(meshd, u0, "film_tmp.%d" % stepSpl)
+        writeGmf(meshd.mesh, 1, "boundary_ids", "film_tmp.%d" % stepSav, u0, 1, "film_tmp.%d" % stepSav, meshd.section)
+
     
     while t < tEnd:
     
@@ -184,13 +184,11 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
             computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, H, hessian, options) 
 
         if doSav :
-            #writeMesh(meshd, "film.%d" % stepSav)
-            if os.path.exists("film_tmp.%d.mesh" % stepSav) : os.remove("film_tmp.%d.mesh" % stepSav)
-            os.symlink("film_tmp.0.mesh", "film_tmp.%d.mesh" % stepSav)
-            writeSol(meshd, u0, "film_tmp.%d" % stepSav)
+            if os.path.exists("film_tmp.%d.meshb" % stepSav) : os.remove("film_tmp.%d.meshb" % stepSav)
+            os.symlink("film_tmp.0.meshb", "film_tmp.%d.meshb" % stepSav)
+            writeGmf(meshd.mesh, 0, "", "", u0, 1, "film_tmp.%d" % stepSav, meshd.section)
         if doSav2 :
-            writeMesh(meshd, "bubble.%d" % options.nbrGlobSav)
-            writeSol(meshd, u0, "bubble.%d" % options.nbrGlobSav)
+            writeGmf(meshd.mesh, 1, "boundary_ids", "bubble.%d" % options.nbrGlobSav, u0, 1, "bubble.%d" % options.nbrGlobSav, meshd.section)
             options.nbrGlobSav += 1
         if options.algo == 2 and (endSol or step == options.adaptStepFreq) :
             H_solv.solve()

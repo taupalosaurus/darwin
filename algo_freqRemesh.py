@@ -44,7 +44,7 @@ def freqRemesh(options) :
         print "##### Adap procedure started "; sys.stdout.flush()
         newmesh = adaptInternal(mesh, metric)
         print "##### Adap procedure finished"; sys.stdout.flush()
-        writeMesh(newmesh, "newmesh")
+        writeGmf(newmesh.mesh, 1, "boundary_ids", "newmesh", None, None, None, newmesh.section)
 
         newsol = Function(newmesh.V)
         interpol(sol, mesh, newsol, newmesh)
@@ -53,8 +53,7 @@ def freqRemesh(options) :
         tIni = tEndSolve
         
         if nbrAdap == 0 :
-            writeMesh(mesh, "bubble.0")
-            writeSol(mesh, sol, "bubble.0")
+            writeGmf(mesh.mesh, 1, "boundary_ids", "bubble.0", sol, 1, "bubble.0", mesh.section)
             options.nbrGlobSav += 1
         
         nbrAdap += 1

@@ -16,7 +16,12 @@ class Meshd() :
         entity_dofs = np.zeros(self.mesh._topological_dimension+1, dtype=np.int32)
         entity_dofs[0] = self.mesh.geometric_dimension()
         self.section = self.mesh._plex.createSection([1], entity_dofs, perm=self.mesh.topology._plex_renumbering)
-        
+
+        #dmCoords = self.mesh.topology._plex.getCoordinateDM()
+        #dmCoords.setDefaultSection(self.section)
+        with mesh.coordinates.dat.vec_ro as coords:
+            mesh.topology._plex.setCoordinatesLocal(coords)
+
         #self.computeVerMinAlt()
         self.altMin.interpolate(2*CellVolume(self.mesh)/MaxCellEdgeLength(self.mesh))
 

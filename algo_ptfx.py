@@ -32,8 +32,7 @@ def ptfx (options) :
                     
         ####  Initial solution    
         solIni = solIniAdvec(mesh)
-        writeMesh(mesh, "bubble.%d" % j)
-        writeSol(mesh, solIni, "bubble.%d" % j)
+        writeGmf(mesh.mesh, 1, "boundary_ids", "bubble.%d" % j, solIni, 1, "bubble.%d" % j, mesh.section)
         
         hessianMetrics = []
         newmeshes = []
@@ -56,20 +55,19 @@ def ptfx (options) :
             # solve 
             tIni, tEnd  = (j-1)*dtAdap, j*dtAdap
             sol, hesMet, t = solveAdvec(mesh, solIni, tIni, tEnd, options)
-            hessianMetrics.append(hesMet)                
-            writeMesh(mesh, "bubble.%d" % j)
-            writeSol(mesh, sol, "bubble.%d" % j)
+            hessianMetrics.append(hesMet)
+            writeGmf(mesh.mesh, 1, "boundary_ids", "bubble.%d" % j, sol, 1, "bubble.%d" % j, mesh.section)
             if options.nbrSav > 0 :
                 kIni = (j-1)*options.nbrSav
                 for k in range(options.nbrSav+1) :
                     kGlob = kIni + k
                     print "DEBUG   film.%d -> film.%d" %(k, kGlob)
                     if k == 0 :
-                        os.rename("film_tmp.%d.mesh" % k, "film.%d.mesh" % kGlob)
+                        os.rename("film_tmp.%d.meshb" % k, "film.%d.meshb" % kGlob)
                     else :
-                        if os.path.exists("film.%d.mesh" % kGlob) : os.remove("film.%d.mesh" % kGlob)
-                        os.symlink("film.%d.mesh" % kIni, "film.%d.mesh" % kGlob)
-                    os.rename("film_tmp.%d.sol" % k, "film.%d.sol" % kGlob)
+                        if os.path.exists("film.%d.meshb" % kGlob) : os.remove("film.%d.meshb" % kGlob)
+                        os.symlink("film.%d.meshb" % kIni, "film.%d.meshb" % kGlob)
+                    os.rename("film_tmp.%d.solb" % k, "film.%d.solb" % kGlob)
 
 
 
@@ -88,4 +86,4 @@ def ptfx (options) :
                 newmesh = adaptInternal(meshes[j], metrics[j])
                 print "##### Adap procedure completed %d" %(j+1) ; sys.stdout.flush()
                 newmeshes.append(newmesh)
-                writeMesh(newmesh, "newmesh.%d" % (j+1))
+                writeGmf(newmesh.mesh, 1, "boundary_ids", "newmesh.%d" % (j+1), None, None, None, newmesh.section)

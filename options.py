@@ -54,7 +54,6 @@ class Options :
             self.nbrSav = 0 
 
 
-
         op2.init()
         self.absValHessian_kernel = op2.Kernel("""
 void absValHessian(double * hess, double *lbdMin) {
@@ -96,15 +95,16 @@ void absTruncMetric_kernel(double * hess, double *lbdmin, double *lbdmax, double
     def setSmallTest(self):
         
         # adaptation parameters    
-        self.nbrPtfxIte = 3
+        self.algo = 1
+        self.nbrPtfxIte = 2
         self.nbrAdap = 2
-        self.nbrSpl = 5 
+        self.nbrSpl = 3
         
         # metrics computation parameters
         self.p = 2
-        self.N = 1000
+        self.N = 700
         self.a = 1000
-        self.hmin = 0.001
+        self.hmin = 0.005
         self.hmax = 0.3
         
         # solver parameters
@@ -112,5 +112,42 @@ void absTruncMetric_kernel(double * hess, double *lbdmin, double *lbdmax, double
         self.Tend = 0.1
         self.n = 50
         self.cfl = 0.95
-        self.nbrSav = 3
-        
+        self.nbrSav = 2
+
+
+    def printOptions(self):
+
+        print "\n############## Options ####################"
+
+        print "\n## Adaptation parameters"
+        if self.algo == 1 :
+            print "    algo      : global fixed-point"
+            print "    nbrPtfxIte: %d" % self.nbrPtfxIte
+            print "    nbrAdap   : %d" % self.nbrAdap
+            print "    nbrSpl    : %d" % self.nbrSpl
+        elif self.algo == 2 :
+            print "    algo         : frequent remeshings"
+            print "    adaptStepFreq: %d" % self.adaptStepFreq
+        else :
+            print "####  ERROR, algo out of range: %d not in (1,2)" % self.algo
+            exit(1)
+
+        print "\n## Metrics computation parameters"
+        print "    p           : %d" % self.p
+        print "    N           : %d" % self.N
+        print "    a           : %f" % self.a
+        print "    hmin        : %f" % self.hmin
+        print "    hmax        : %f" % self.hmax
+        if self.algo == 2 :
+            print "    steadyMetric: %d" % self.steadyMetric
+
+        print "\n## Solver parameters"
+        print "    T        : %f"  % self.T
+        print "    Tend     : %f"  % self.Tend
+        print "    n        : %d"  % self.n
+        print "    cfl      : %f"  % self.cfl
+        if self.algo == 1:
+            print "    nbrSav   : %d"  % self.nbrSav
+        elif self.algo == 2:
+            print "    nbrSavTot: %d"  % self.nbrSavTot
+            print "    dtSav    : %f"  % self.dtSav

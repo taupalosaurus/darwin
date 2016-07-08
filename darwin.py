@@ -1,6 +1,6 @@
 import numpy as np
 from numpy import linalg as LA
-import sys, os, time
+import sys, os, time, datetime
 
 from options import *
 from mesh import *
@@ -24,7 +24,15 @@ INF = float("inf")
 
 
 def main() :
-    
+
+
+    today = datetime.datetime.today()
+    print "#############################"
+    print "#           Darwin          #"
+    print "#  Imperial College London  #"
+    print "#    %4d-%02d-%02d %02d:%02d:%02d    #" %(today.year, today.month, today.day, today.hour, today.minute, today.second) 
+    print "#############################\n"
+
     
 
     options = Options(algo=1,
@@ -52,14 +60,19 @@ def main() :
 #                       n = 150,
 #                       cfl = 0.95,
 #                       nbrSavTot = 150)
+
 #    options.setSmallTest()
-                
+    options.printOptions()
+
+
     if options.algo == 1 :
         ptfx(options)
     elif options.algo == 2 :
         freqRemesh(options)
     else :
         print "####  ERROR  only two adaptation algrithms"
+
+
         
         
 if __name__ == '__main__':
