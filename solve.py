@@ -46,7 +46,7 @@ def computeAvgHessian(meshd, sol, t, tIni, tEnd, nbrSpl, H, hessian, options) :
     detMax = Function(meshd.V).interpolate(abs(det(H))).dat.data.max()   
     lbdmax = sqrt(detMax)
     lbdmin = 1.e-20 * lbdmax
-    
+
     lbdMin = op2.Global(1, lbdmin, dtype=float);
     op2.par_loop(options.absValHessian_kernel, H.node_set().superset, H.dat(op2.RW), lbdMin(op2.READ))
 
@@ -87,9 +87,15 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
 
     time = Constant(0)
     delta_t = Constant(0.1)
-    cxExpr = "-sin(pi*x[0])*sin(pi*x[0])*sin(2*pi*x[1])" 
-    cyExpr = "sin(2*pi*x[0])*sin(pi*x[1])*sin(pi*x[1])"
-    c0.interpolate(Expression([cxExpr, cyExpr]))
+    if options.dim == 2:
+        cxExpr = "-sin(pi*x[0])*sin(pi*x[0])*sin(2*pi*x[1])" 
+        cyExpr = "sin(2*pi*x[0])*sin(pi*x[1])*sin(pi*x[1])"
+        c0.interpolate(Expression([cxExpr, cyExpr]))
+    else:
+        cxExpr = "2*sin(pi*x[0])*sin(pi*x[0])*sin(2*pi*x[1])*sin(2*pi*x[2])"
+        cyExpr = "-sin(2*pi*x[0])*sin(pi*x[1])*sin(pi*x[1])*sin(2*pi*x[2])"
+        czExpr = "-sin(2*pi*x[0])*sin(2*pi*x[1])*sin(pi*x[2])*sin(pi*x[2])"
+        c0.interpolate(Expression([cxExpr, cyExpr, czExpr]))
     c = c0*cos(2*pi*time/T)
 
     a = v*u*dx + 0.5*delta_t*(v*dot(c, grad(u))*dx)
@@ -105,8 +111,14 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
     sigma = TestFunction(M)
     H = Function(M)
     n = FacetNormal(mesh)
-    Lh = inner(sigma, H)*dx
-    Lh += inner(div(sigma), grad(u0))*dx - (sigma[0, 1]*n[1]*u0.dx(0) + sigma[1, 0]*n[0]*u0.dx(1))*ds
+    Lh = inner(sigma, H)*dx + inner(div(sigma), grad(u0))*dx
+    if options.dim == 2:
+        Lh -= (sigma[0, 1]*n[1]*u0.dx(0) + sigma[1, 0]*n[0]*u0.dx(1))*ds
+    else :
+        Lh -= (sigma[0,0]*u0.dx(0)*n[0] + sigma[1,0]*u0.dx(1)*n[0] + sigma[2,0]*u0.dx(2)*n[0] \
+            +  sigma[0,1]*u0.dx(0)*n[1] + sigma[1,1]*u0.dx(1)*n[1] + sigma[2,1]*u0.dx(2)*n[1] \
+            +  sigma[0,2]*u0.dx(0)*n[2] + sigma[1,2]*u0.dx(1)*n[2] + sigma[2,2]*u0.dx(2)*n[2])*ds
+        print "## Warning: Variational form for 3D hessian computation still under heavy work"    
     H_prob = NonlinearVariationalProblem(Lh, H)
     H_solv = NonlinearVariationalSolver(H_prob)
 
@@ -197,17 +209,22 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
             
             
     return [u0, hessian, t]
-    
-    
-    
+
+
+
 def solIniAdvec(meshd):
     
     V = FunctionSpace(meshd.mesh, "CG", 1)
-    icExpr = Expression("((x[0]-0.5)*(x[0]-0.5) + (x[1]-0.75)*(x[1]-0.75) < 0.15*0.15)")
+    if meshd.mesh._topological_dimension == 2:
+        icExpr = Expression("((x[0]-0.5)*(x[0]-0.5) + (x[1]-0.75)*(x[1]-0.75) < 0.15*0.15)")
+    else: 
+        icExpr = Expression("((x[0]-0.35)*(x[0]-0.35) + (x[1]-0.35)*(x[1]-0.35) + (x[2]-0.35)*(x[2]-0.35) < 0.15*0.15)")
     u0 = Function(V).interpolate(icExpr)
     
     return u0
-    
+
+
+
 def hessIniAdvec(meshd, sol):
     
     mesh = meshd.mesh

@@ -26,6 +26,14 @@ def normalizeUnsteadyMetrics(hessianMetrics, meshes, options) :
     ushmin2 = 1./(hmin*hmin)
     hmax = options.hmax
     ushmax2 = 1./(hmax*hmax)
+    if options.dim == 2 :
+        lpPow1 = -1./(2*p+2)
+        lpPow2 = float(p)/(2*p+2)
+        lpPow3 = 1.
+    else :
+        lpPow1 = -1./(2*p+3)
+        lpPow2 = float(p)/(2*p+3)
+        lpPow3 = 2./3
     
     cofGlob = 0
     for H, meshd in zip(hessianMetrics, meshes) :
@@ -35,14 +43,14 @@ def normalizeUnsteadyMetrics(hessianMetrics, meshes, options) :
         detH = Function(V)
         # compute determinant
         detH.interpolate(det(H))
-        detH_pow1 = np.power(detH.dat.data, -1./(2*p+2))
+        detH_pow1 = np.power(detH.dat.data, lpPow1)
         H.dat.data[...] *= detH_pow1[:, np.newaxis, np.newaxis]
-        detH.dat.data[...] = np.power(detH.dat.data, float(p)/(2*p+2))
+        detH.dat.data[...] = np.power(detH.dat.data, lpPow2)
         
         # intergrate determinant over space and assemble gloabl normalization term
         cofGlob += assemble(detH*dx)
         
-    cofGlob = float(N)/cofGlob
+    cofGlob = pow(float(N)/cofGlob, lpPow3)
 
     lbdMin = op2.Global(1, ushmax2, dtype=float);
     lbdMax = op2.Global(1, ushmin2, dtype=float);

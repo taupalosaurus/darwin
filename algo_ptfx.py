@@ -14,7 +14,10 @@ from interpol import *
 
 def ptfx (options) :
     
-    mesh = Meshd(UnitSquareMesh(options.n, options.n))
+    if options.dim == 2:
+        mesh = Meshd(UnitSquareMesh(options.n, options.n))
+    else:
+        mesh = Meshd(UnitCubeMesh(options.n, options.n, options.n))
     
     dtAdap = float(options.Tend)/options.nbrAdap
 
@@ -78,6 +81,7 @@ def ptfx (options) :
             # normalizeMetric
             print "########## Metrics computation" ; sys.stdout.flush()
             metrics = normalizeUnsteadyMetrics(hessianMetrics, meshes, options)
+
         
             # generate meshes
             print "########## Meshes generation" ; sys.stdout.flush()

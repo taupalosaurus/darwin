@@ -23,7 +23,13 @@ class Meshd() :
             mesh.topology._plex.setCoordinatesLocal(coords)
 
         #self.computeVerMinAlt()
-        self.altMin.interpolate(2*CellVolume(self.mesh)/MaxCellEdgeLength(self.mesh))
+        if self.mesh._plex == 2:
+            self.altMin.interpolate(2*CellVolume(self.mesh)/MaxCellEdgeLength(self.mesh))
+        else :
+            self.altMin.interpolate(Circumradius(self.mesh)*MinCellEdgeLength(self.mesh)/MaxCellEdgeLength(self.mesh))
+            print "#### WARNING minimal altitude computed very approximately in 3D"
+#            exit(1)
+#            self.altMin.interpolate(6*CellVolume(self.mesh)/MaxCellFacetArea(self.mesh))
 
         
     def computeVerMinAlt(self) :  # altMin is a Function(FunctionSpace(mesh, 'CG', 1))  

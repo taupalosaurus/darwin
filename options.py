@@ -5,6 +5,7 @@ class Options :
     
     
     def __init__(self, 
+                 dim = 2,
                  algo = 1,
                  nbrPtfxIte=1,
                  nbrAdap = 1,
@@ -24,6 +25,9 @@ class Options :
                  nbrSavTot = 0,
                  dtSav = 0) :
     
+    
+        self.dim = dim
+        
         # adaptation parameters
         self.algo = algo  # 1 for ptfx, 2 for frequent remeshes    
         self.nbrPtfxIte = nbrPtfxIte
@@ -55,7 +59,8 @@ class Options :
 
 
         op2.init()
-        self.absValHessian_kernel = op2.Kernel("""
+        if self.dim == 2:
+            self.absValHessian_kernel = op2.Kernel("""
 void absValHessian(double * hess, double *lbdMin) {
   
   double lmin = *lbdMin;
@@ -67,7 +72,20 @@ void absValHessian(double * hess, double *lbdMin) {
 
 }
 """ % (computeEigVal_str, absValueHessian_str, truncLowHessian_str, rebuildHessian_str), "absValHessian")
+        else:
+            self.absValHessian_kernel = op2.Kernel("""
+void absValHessian(double * hess, double *lbdMin) {
+  
+  double lmin = *lbdMin;
+  
+%s
+%s
+%s
+%s
 
+}
+""" % (computeEigVal3_str, absValueHessian3_str, truncLowHessian3_str, rebuildHessian3_str), "absValHessian")
+            
 
 
 #        usa2 = 1./(self.a*self.a)
@@ -76,7 +94,8 @@ void absValHessian(double * hess, double *lbdMin) {
 #        op2.Const(1, ushmax2, dtype=float, name="lbdMin");
 #        op2.Const(1, ushmin2, dtype=float, name="lbdMax");
 #        op2.Const(1, usa2, dtype=float, name="usa2");
-        self.absTruncMetric_kernel = op2.Kernel("""
+        if self.dim == 2:
+            self.absTruncMetric_kernel = op2.Kernel("""
 void absTruncMetric_kernel(double * hess, double *lbdmin, double *lbdmax, double *usa2_p) {
     
     double lmin = *lbdmin;
@@ -90,9 +109,25 @@ void absTruncMetric_kernel(double * hess, double *lbdmin, double *lbdmax, double
 
 }
 """ % (computeEigVal_str, truncLowHessian_str, truncHighHessian_str, truncRatioHessian_str, rebuildHessian_str), "absTruncMetric_kernel")
+        else:
+            self.absTruncMetric_kernel = op2.Kernel("""
+void absTruncMetric_kernel(double * hess, double *lbdmin, double *lbdmax, double *usa2_p) {
+    
+    double lmin = *lbdmin;
+    double lmax = *lbdmax;
+    double usa2 = *usa2_p;
+%s
+%s
+%s
+%s
+%s
 
+}
+""" % (computeEigVal3_str, truncLowHessian3_str, truncHighHessian3_str, truncRatioHessian3_str, rebuildHessian3_str), "absTruncMetric_kernel")
                 
     def setSmallTest(self):
+        
+        self.dim = 2
         
         # adaptation parameters    
         self.algo = 1
@@ -114,10 +149,36 @@ void absTruncMetric_kernel(double * hess, double *lbdmin, double *lbdmax, double
         self.cfl = 0.95
         self.nbrSav = 2
 
+    def setSmallTest3d(self):
+    
+        self.dim = 3
+    
+        # adaptation parameters    
+        self.algo = 1
+        self.nbrPtfxIte = 2
+        self.nbrAdap = 2
+        self.nbrSpl = 3
+    
+        # metrics computation parameters
+        self.p = 2
+        self.N = 500
+        self.a = 1000
+        self.hmin = 0.01
+        self.hmax = 0.3
+    
+        # solver parameters
+        self.T = 6
+        self.Tend = 0.1
+        self.n = 10
+        self.cfl = 0.95
+        self.nbrSav = 2
+
 
     def printOptions(self):
 
         print "\n############## Options ####################"
+        
+        print "\n## Dimension: %d" % self.dim
 
         print "\n## Adaptation parameters"
         if self.algo == 1 :

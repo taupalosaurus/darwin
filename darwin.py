@@ -36,6 +36,7 @@ def main() :
     
 
     options = Options(algo=1,
+                      dim = 3,
                       nbrPtfxIte=3,
                       nbrAdap = 100,
                       nbrSpl = 20,
@@ -61,7 +62,7 @@ def main() :
 #                       cfl = 0.95,
 #                       nbrSavTot = 150)
 
-#    options.setSmallTest()
+    options.setSmallTest3d()
     options.printOptions()
 
 

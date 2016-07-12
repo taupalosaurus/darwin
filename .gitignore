@@ -1,4 +1,5 @@
 *.pyc
 *mesh
 *sol
+test.py
 unsteadyAdapAdvection.py
