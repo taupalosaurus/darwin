@@ -19,8 +19,8 @@ class Meshd() :
 
         #dmCoords = self.mesh.topology._plex.getCoordinateDM()
         #dmCoords.setDefaultSection(self.section)
-        with mesh.coordinates.dat.vec_ro as coords:
-            mesh.topology._plex.setCoordinatesLocal(coords)
+        with self.mesh.coordinates.dat.vec_ro as coords:
+            self.mesh.topology._plex.setCoordinatesLocal(coords)
 
         #self.computeVerMinAlt()
         if self.mesh._plex == 2:

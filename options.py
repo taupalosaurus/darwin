@@ -23,7 +23,9 @@ class Options :
                  cfl = 0.95,
                  nbrSav = 0,
                  nbrSavTot = 0,
-                 dtSav = 0) :
+                 dtSav = 0,
+                 snes_rtol = 1e8,
+                 ksp_rtol = 1e-5) :
     
     
         self.dim = dim
@@ -56,6 +58,11 @@ class Options :
         if nbrSavTot > 0:
             self.dtSav = self.Tend/self.nbrSavTot
             self.nbrSav = 0 
+
+
+        # Petsc SNES parameters for Hessian computation
+        self.snes_rtol = snes_rtol
+        self.ksp_rtol = ksp_rtol
 
 
         op2.init()
@@ -212,3 +219,8 @@ void absTruncMetric_kernel(double * hess, double *lbdmin, double *lbdmax, double
         elif self.algo == 2:
             print "    nbrSavTot: %d"  % self.nbrSavTot
             print "    dtSav    : %f"  % self.dtSav
+
+        print "\n## PETSc SNES parameters for Hessian computations"
+        print "    snes_rtol : %1.1e" % self.snes_rtol
+        print "    ksp_rtol  : %1.1e" % self.ksp_rtol
+

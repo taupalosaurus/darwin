@@ -38,16 +38,19 @@ def main() :
     options = Options(algo=1,
                       dim = 3,
                       nbrPtfxIte=3,
-                      nbrAdap = 100,
-                      nbrSpl = 20,
+                      nbrAdap = 15,
+                      nbrSpl = 15,
                       p = 2,
                       N = 50000,
-                      hmin = 0.0008,
+                      hmin = 0.003,
                       hmax = 0.3,
+                      a = 2,
                       T = 6,
-                      Tend = 6,
-                      n = 250,
-                      nbrSav = 3)
+                      Tend = 1.5,
+                      n = 70,
+                      nbrSav = 3,
+                      snes_rtol = 1e-2,
+                      ksp_rtol = 1e-5)
 #    options = Options( algo = 2,
 #                       adaptStepFreq = 3,
 #                       p = 2,
@@ -62,7 +65,7 @@ def main() :
 #                       cfl = 0.95,
 #                       nbrSavTot = 150)
 
-    options.setSmallTest3d()
+#    options.setSmallTest3d()
     options.printOptions()
 
 

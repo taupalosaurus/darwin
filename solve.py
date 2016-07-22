@@ -3,6 +3,7 @@ import pyop2 as op2
 import sys, os, os.path
 from numpy import linalg as LA
 import numpy as np
+from time import clock
 
 from inout import *
 from hessian import *
@@ -30,8 +31,14 @@ def computeDtAdvec(meshd, cn, cxExpr, cyExpr, options) :
 #        dtloc = meshd.altMin.dat.data[iVer] / (cn.dat.data[iVer]+1e-10)
 #        dt = min(dt, dtloc)   
 
+    print "DEBUG  start dt computation"; sys.stdout.flush()
+    chrono1 = clock()
+
     dt = (meshd.altMin.dat.data / (cn.dat.data+1e-10)).min()
     dt *= options.cfl
+
+    chrono2 = clock()
+    print "DEBUG  end dt computation. Elapsed time : %1.2es" % (chrono2-chrono1); sys.stdout.flush()
 
     return dt
 
@@ -39,8 +46,9 @@ def computeDtAdvec(meshd, cn, cxExpr, cyExpr, options) :
     
 def computeAvgHessian(meshd, sol, t, tIni, tEnd, nbrSpl, H, hessian, options) :
     
-    print "DEBUG  hessian-metric assembly"
-    
+    print "DEBUG  hessian-metric assembly"; sys.stdout.flush()
+    chrono1 = clock()
+
     mesh = meshd.mesh
 
     detMax = Function(meshd.V).interpolate(abs(det(H))).dat.data.max()   
@@ -56,11 +64,8 @@ def computeAvgHessian(meshd, sol, t, tIni, tEnd, nbrSpl, H, hessian, options) :
     if (t == tIni) or (t == tEnd) : cof *= 0.5
     hessian.dat.data[...] += cof*H.dat.data
 
-    if (np.isnan(hessian.dat.data).max()) :
-        print "DEBUG    H is nan!!!!"
-    if (np.isinf(hessian.dat.data).max()) :
-        print "DEBUG    H is inf!!!!"
-
+    chrono2 = clock()
+    print "DEBUG  end Hessian-metric assembly. Elapsed time: %1.2e" %(chrono2-chrono1); sys.stdout.flush()
 
 
 
@@ -120,7 +125,15 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
             +  sigma[0,2]*u0.dx(0)*n[2] + sigma[1,2]*u0.dx(1)*n[2] + sigma[2,2]*u0.dx(2)*n[2])*ds
         print "## Warning: Variational form for 3D hessian computation still under heavy work"    
     H_prob = NonlinearVariationalProblem(Lh, H)
-    H_solv = NonlinearVariationalSolver(H_prob)
+    H_solv = NonlinearVariationalSolver(H_prob, solver_parameters={'snes_rtol': options.snes_rtol,
+                                                                   'ksp_rtol': options.ksp_rtol,
+                                                                   'ksp_gmres_restart': 20,
+                                                                   'pc_type': 'sor',
+                                                                   'snes_monitor': True,
+                                                                   'snes_view': False,
+                                                                   'ksp_monitor_true_residual': True,
+                                                                   'snes_converged_reason': True,
+                                                                   'ksp_converged_reason': True})
 
     nbrSpl = options.nbrSpl 
     dtSpl = float(tEnd-tIni)/(nbrSpl-1)
@@ -131,25 +144,35 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
     step = 0
     stepSav = 0
     stepSpl = 0
-    print "####  step %d " % step ; sys.stdout.flush()
+    print "\n####  step %d " % step ; sys.stdout.flush()
+    chronostep1 = clock()
     
     t = tIni
     dt = 0
     u0.assign(solIni)
 
     if options.algo == 1:
+        print "DEBUG  start hessian solve"; sys.stdout.flush()
+        chrono1 = clock()
         H_solv.solve()
+        chrono2 = clock()
+        print "DEBUG  end hessian solve. Elapsed time: %1.2e" %(chrono2-chrono1); sys.stdout.flush()
         computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, H, hessian, options) 
 
     if options.nbrSav > 0 :
         stepSpl = 0
+        print "DEBUG  write mesh and solution"; sys.stdout.flush()
+        chrono1 = clock()
         writeGmf(meshd.mesh, 1, "boundary_ids", "film_tmp.%d" % stepSav, u0, 1, "film_tmp.%d" % stepSav, meshd.section)
+        chrono2 = clock()
+        print "DEBUG  end write mesh and solution. Elapsed time: %1.2e" %(chrono2-chrono1);  sys.stdout.flush()
 
     
     while t < tEnd:
     
+        chronostep1 = clock()
         step += 1
-        print "####  step %d " % step ; sys.stdout.flush()
+        print "\n####  step %d " % step ; sys.stdout.flush()
     
         time.assign(t)
         cn.interpolate(cnorm)
@@ -185,20 +208,32 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
             stepSpl += 1
             doSpl = 1
         
-        print "DEBUG  t:  %1.3e -> %1.3e with dt: %1.7e" %(t, t+dt, dt)
+        print "DEBUG  t:  %1.3e -> %1.3e with dt: %1.7e" %(t, t+dt, dt);  sys.stdout.flush()
         
+        print "DEBUG  start solve"; sys.stdout.flush()
+        chrono1 = clock()
         solve(a==L, u0, bcs=bc)
-        
+        chrono2 = clock()
+        print "DEBUG  end solve. Elapsed time: %1.2e" %(chrono2-chrono1); sys.stdout.flush()
+
         t += dt
         
         if doSpl :
+            print "DEBUG  start hessian solve"; sys.stdout.flush()
+            chrono1 = clock()
             H_solv.solve()
+            chrono2 = clock()
+            print "DEBUG  end hessian solve. Elapsed time: %1.2e" %(chrono2-chrono1); sys.stdout.flush()
             computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, H, hessian, options) 
 
         if doSav :
             if os.path.exists("film_tmp.%d.meshb" % stepSav) : os.remove("film_tmp.%d.meshb" % stepSav)
             os.symlink("film_tmp.0.meshb", "film_tmp.%d.meshb" % stepSav)
+            print "DEBUG  write solution"; sys.stdout.flush()
+            chrono1 = clock()
             writeGmf(meshd.mesh, 0, "", "", u0, 1, "film_tmp.%d" % stepSav, meshd.section)
+            chrono2 = clock()
+            print "DEBUG  end write solution. Elapsed time: %1.2e" %(chrono2-chrono1);  sys.stdout.flush()
         if doSav2 :
             writeGmf(meshd.mesh, 1, "boundary_ids", "bubble.%d" % options.nbrGlobSav, u0, 1, "bubble.%d" % options.nbrGlobSav, meshd.section)
             options.nbrGlobSav += 1
@@ -206,7 +241,9 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
             H_solv.solve()
             hessian = H
             break
-            
+
+        chronostep2 = clock()
+        print "DEBUG  .Step elapsed time: %1.2e" %(chronostep2-chronostep1);  sys.stdout.flush()
             
     return [u0, hessian, t]
 

@@ -13,11 +13,16 @@ from interpol import *
 
 
 def ptfx (options) :
-    
-    if options.dim == 2:
+   
+    print "DEBUG  importing initial mesh"
+    chrono1 = time.clock()
+    if options.dim == 2 :
         mesh = Meshd(UnitSquareMesh(options.n, options.n))
-    else:
+    else :
         mesh = Meshd(UnitCubeMesh(options.n, options.n, options.n))
+        #mesh = Meshd(Mesh("cube300k.msh"))
+    chrono2 = time.clock()
+    print "DEBUG  done importing mesh. Elapsed time: %1.2e" %(chrono2-chrono1); sys.stdout.flush()
     
     dtAdap = float(options.Tend)/options.nbrAdap
 
@@ -53,7 +58,11 @@ def ptfx (options) :
                     meshOld = mesh
                     mesh = meshes[j-1]
                     solIni = Function(FunctionSpace(mesh.mesh, 'CG', 1))
+                    print "DEBUG  interpolation"; sys.stdout.flush()
+                    chrono1 = time.clock()
                     interpol(sol, meshOld, solIni, mesh)
+                    chrono2 = clock()
+                    print "DEBUG  end interpolation. Elapsed time: %1.2e" %(chrono2-chrono1);  sys.stdout.flush()
             
             # solve 
             tIni, tEnd  = (j-1)*dtAdap, j*dtAdap
@@ -80,14 +89,24 @@ def ptfx (options) :
         
             # normalizeMetric
             print "########## Metrics computation" ; sys.stdout.flush()
+            chrono1 = time.clock()
             metrics = normalizeUnsteadyMetrics(hessianMetrics, meshes, options)
+            chrono2 = time.clock()
+            print "########## End metrics computation. Elapsed time: %1.2e" %(chrono2-chrono1) ; sys.stdout.flush()
 
         
             # generate meshes
             print "########## Meshes generation" ; sys.stdout.flush()
             for j in range(options.nbrAdap) :
                 print "##### Adap procedure started %d" %(j+1) ; sys.stdout.flush()
+                chrono1 = time.clock()
                 newmesh = adaptInternal(meshes[j], metrics[j])
-                print "##### Adap procedure completed %d" %(j+1) ; sys.stdout.flush()
+                chrono2 = time.clock()
+                print "##### Adap procedure completed %d. Elapsed time: %1.2e" %(j+1, chrono2-chrono1) ; sys.stdout.flush()
                 newmeshes.append(newmesh)
+                print "DEBUG  write mesh"; sys.stdout.flush()
+                chrono1 = time.clock()
                 writeGmf(newmesh.mesh, 1, "boundary_ids", "newmesh.%d" % (j+1), None, None, None, newmesh.section)
+                chrono2 = clock()
+                print "DEBUG  end write mesh. Elapsed time: %1.2e" %(chrono2-chrono1);  sys.stdout.flush()
+

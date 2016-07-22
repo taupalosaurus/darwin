@@ -64,6 +64,8 @@ def normalizeUnsteadyMetrics(hessianMetrics, meshes, options) :
         H.dat.data[...] *= cofGlob
 
         op2.par_loop(options.absTruncMetric_kernel, H.node_set().superset, H.dat(op2.RW), lbdMin(op2.READ), lbdMax(op2.READ), rat(op2.READ))
+
+        writeGmf(mesh, 1, "boundary_ids", "metric.%d" % j, H, 5, "metric.%d"%j, meshd.section)
         
 #        writeMesh(meshd, "metric.%d" % j)
 #        writeMetric(meshd, H, "metric.%d" % j)
