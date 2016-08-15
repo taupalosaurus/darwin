@@ -1,5 +1,6 @@
 from firedrake import *
 import pyop2 as op2
+
 import sys, os, os.path
 from numpy import linalg as LA
 import numpy as np
@@ -81,7 +82,7 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
     Vn = FunctionSpace(mesh, "CG", 1)
     M = TensorFunctionSpace(mesh, 'CG', 1)
     u, v = TrialFunction(Q), TestFunction(Q)
-    u0 = Function(Q)     
+    u0, ucorr = Function(Q), Function(Q)     
     c0, cn = Function(V), Function(Vn) # velocity base and its norm
     hessian = Function(M)
 
@@ -103,15 +104,20 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
         c0.interpolate(Expression([cxExpr, cyExpr, czExpr]))
     c = c0*cos(2*pi*time/T)
 
-    a = v*u*dx + 0.5*delta_t*(v*dot(c, grad(u))*dx)
-    L = v*u0*dx - 0.5*delta_t*(v*dot(c, grad(u0))*dx)
+    a = v*u*dx(degree=3) + 0.5*delta_t*(v*dot(c, grad(u))*dx(degree=3))
+    L = v*u0*dx(degree=3) - 0.5*delta_t*(v*dot(c, grad(u0))*dx(degree=3))
     # Add SUPG stabilization terms
     ra = u + 0.5*delta_t*(dot(c, grad(u)))
     rL = u0 - 0.5*delta_t*(dot(c, grad(u0)))
     cnorm = sqrt(dot(c, c))
     h = meshd.altMin
-    a += (h/(2.*cnorm))*dot(c, grad(v))*ra*dx
-    L += (h/(2.*cnorm))*dot(c, grad(v))*rL*dx
+    a += (h/(2.*cnorm))*dot(c, grad(v))*ra*dx(degree=3)
+    L += (h/(2.*cnorm))*dot(c, grad(v))*rL*dx(degree=3)
+
+    A_prob = LinearVariationalProblem(a,L,u0,bcs=bc, constant_jacobian=False)
+    A_solv = LinearVariationalSolver(A_prob, solver_parameters={'ksp_converged_reason': True,
+                                                                'ksp_monitor_true_residual': True,
+                                                                'ksp_view': False})
     
     sigma = TestFunction(M)
     H = Function(M)
@@ -212,9 +218,14 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
         
         print "DEBUG  start solve"; sys.stdout.flush()
         chrono1 = clock()
-        solve(a==L, u0, bcs=bc)
+        A_solv.solve()
         chrono2 = clock()
         print "DEBUG  end solve. Elapsed time: %1.2e" %(chrono2-chrono1); sys.stdout.flush()
+
+        print "DEBUG  correct solution, u in [0,1]"
+        ucorr.dat.data[...] = np.maximum(u0.dat.data, 0)
+        ucorr.dat.data[...] = np.minimum(ucorr.dat.data, 1)
+        u0.assign(ucorr)
 
         t += dt
         

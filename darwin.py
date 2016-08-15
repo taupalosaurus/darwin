@@ -14,7 +14,7 @@ from interpol import *
 t0 = time.clock()
 from firedrake import *
 tloadfdk = time.clock()
-print "## module firedrake loaded (%ds)" % (tloadfdk - t0); sys.stdout.flush()
+#print "## module firedrake loaded (%ds)" % (tloadfdk - t0); sys.stdout.flush()
 
 INF = float("inf")
 
@@ -37,20 +37,38 @@ def main() :
 
     options = Options(algo=1,
                       dim = 3,
-                      nbrPtfxIte=3,
-                      nbrAdap = 15,
+                      nbrPtfxIte=2,
+                      nbrAdap = 25,
                       nbrSpl = 15,
                       p = 2,
-                      N = 50000,
-                      hmin = 0.003,
+                      N = 150000,
+                      hmin = 0.001,
                       hmax = 0.3,
-                      a = 2,
+                      a = 20,
                       T = 6,
                       Tend = 1.5,
-                      n = 70,
-                      nbrSav = 3,
+                      cfl = 1.3,
+                      n = 80,
+                      nbrSav = 5,
                       snes_rtol = 1e-2,
                       ksp_rtol = 1e-5)
+#    options = Options(algo=1,
+#                      dim = 2,
+#                      nbrPtfxIte=7,
+#                      nbrAdap = 50,
+#                      nbrSpl = 20,
+#                      p = 2,
+#                      N = 95000,
+#                      hmin = 0.0007,
+#                      hmax = 0.3,
+#                      a = 25,
+#                      T = 6,
+#                      Tend = 3,
+#                      n = 300,
+#                      nbrSav = 4,
+#                      snes_rtol = 1e-2,
+#                      ksp_rtol = 1e-5)
+    
 #    options = Options( algo = 2,
 #                       adaptStepFreq = 3,
 #                       p = 2,
@@ -67,6 +85,7 @@ def main() :
 
 #    options.setSmallTest3d()
     options.printOptions()
+    sys.stdout.flush()
 
 
     if options.algo == 1 :
@@ -83,6 +102,7 @@ if __name__ == '__main__':
 
 
     parameters["pyop2_options"]["log_level"] = "WARNING"
+    parameters["assembly_cache"]["enabled"] = False
 
     tini = time.clock()
 

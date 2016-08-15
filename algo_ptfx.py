@@ -20,35 +20,34 @@ def ptfx (options) :
         mesh = Meshd(UnitSquareMesh(options.n, options.n))
     else :
         mesh = Meshd(UnitCubeMesh(options.n, options.n, options.n))
-        #mesh = Meshd(Mesh("cube300k.msh"))
     chrono2 = time.clock()
     print "DEBUG  done importing mesh. Elapsed time: %1.2e" %(chrono2-chrono1); sys.stdout.flush()
     
     dtAdap = float(options.Tend)/options.nbrAdap
 
-    
+
     for i in range(options.nbrPtfxIte) :
-        
+
         print "\n\n\n##########  i: %d\n" % i ; sys.stdout.flush()
-        
+
         j = 0
         if i == 0 :
             meshes = options.nbrAdap*[mesh]
         else : 
             meshes = newmeshes
             mesh = meshes[j]
-                    
+
         ####  Initial solution    
         solIni = solIniAdvec(mesh)
         writeGmf(mesh.mesh, 1, "boundary_ids", "bubble.%d" % j, solIni, 1, "bubble.%d" % j, mesh.section)
-        
+
         hessianMetrics = []
         newmeshes = []
-        
+
         for j in range(1, options.nbrAdap+1) :
-            
+
             print "\n#####  j: %d\n" % j ; sys.stdout.flush()
-                                        
+
             # interpolate previous solution on new mesh if necessary (ie i > 0 and j > 0)
             if i == 0:
                 if j > 1 :
@@ -63,7 +62,7 @@ def ptfx (options) :
                     interpol(sol, meshOld, solIni, mesh)
                     chrono2 = clock()
                     print "DEBUG  end interpolation. Elapsed time: %1.2e" %(chrono2-chrono1);  sys.stdout.flush()
-            
+
             # solve 
             tIni, tEnd  = (j-1)*dtAdap, j*dtAdap
             sol, hesMet, t = solveAdvec(mesh, solIni, tIni, tEnd, options)

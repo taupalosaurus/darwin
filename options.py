@@ -65,11 +65,12 @@ class Options :
         self.ksp_rtol = ksp_rtol
 
 
+
         op2.init()
         if self.dim == 2:
             self.absValHessian_kernel = op2.Kernel("""
 void absValHessian(double * hess, double *lbdMin) {
-  
+
   double lmin = *lbdMin;
   
 %s

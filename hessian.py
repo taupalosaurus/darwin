@@ -250,9 +250,11 @@ computeEigVal3_str = """
       pmin = fabs(px);
     }
     ppx = (ap*x1+bp)*x1+cp; 
-    if ( fabs((x1-x0)/x0) < 1e-7 ) {  // the algorithm has (almost) converged
+    if ( fabs((x1-x0)/x1) < 1e-7 ) {  // the algorithm has (almost) converged
       eigVal[1] = xmin;
       if ( pmin > 1e-12 ){ // check that P(xmin) really close to 0
+	      printf(\"ERRORKERNEL pmin: %1.3e, dist: %1.2e i: %d    mat: %1.15e %1.15e %1.15e %1.15e %1.15e %1.15e\\n\", pmin, fabs((x1-x0)/x1), i, mat[0], mat[1], mat[2], mat[3], mat[4], mat[5]);
+        printf(\"ERRORKERNEL  eigVals so far: %1.8e  %1.8e %1.8e\\n\", eigVal[0], eigVal[1], eigVal[2]);
         exit(22);
       }
       break;
