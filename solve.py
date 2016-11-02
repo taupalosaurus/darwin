@@ -8,30 +8,14 @@ from time import clock
 
 from inout import *
 from hessian import *
+from options import *
+from mesh import *
 
 
-
-
-
-def computeDtAdvecOld(meshd, cn, cxExpr, cyExpr, options) :
-    
-    nrmc = "sqrt((%s)*(%s)+(%s)*(%s))" % (cxExpr, cxExpr, cyExpr, cyExpr)
-    cn.interpolate(Expression(nrmc))
-    cmax = cn.dat.data.max()
-    hmin = 1./options.n #### TODO don't leave that !!!
-    dt = 0.5*hmin/cmax
-
-    return dt
-    
 
     
 def computeDtAdvec(meshd, cn, cxExpr, cyExpr, options) :
     
-#    dt = 1e10
-#    for iVer in range(meshd.mesh.topology.num_vertices()):
-#        dtloc = meshd.altMin.dat.data[iVer] / (cn.dat.data[iVer]+1e-10)
-#        dt = min(dt, dtloc)   
-
     print "DEBUG  start dt computation"; sys.stdout.flush()
     chrono1 = clock()
 
@@ -115,8 +99,11 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
     L += (h/(2.*cnorm))*dot(c, grad(v))*rL*dx(degree=3)
 
     A_prob = LinearVariationalProblem(a,L,u0,bcs=bc, constant_jacobian=False)
-    A_solv = LinearVariationalSolver(A_prob, solver_parameters={'ksp_converged_reason': True,
-                                                                'ksp_monitor_true_residual': True,
+    pc = 'sor'
+    A_solv = LinearVariationalSolver(A_prob, solver_parameters={'pc_type': pc,
+                                                                'ksp_max_it' : 1500,
+                                                                'ksp_converged_reason': True,
+                                                                'ksp_monitor_true_residual': False,
                                                                 'ksp_view': False})
     
     sigma = TestFunction(M)
@@ -137,7 +124,7 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
                                                                    'pc_type': 'sor',
                                                                    'snes_monitor': True,
                                                                    'snes_view': False,
-                                                                   'ksp_monitor_true_residual': True,
+                                                                   'ksp_monitor_true_residual': False,
                                                                    'snes_converged_reason': True,
                                                                    'ksp_converged_reason': True})
 
@@ -183,18 +170,26 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
         time.assign(t)
         cn.interpolate(cnorm)
         dt = computeDtAdvec(meshd, cn, cxExpr, cyExpr, options)
+
         
         if (options.nbrSav > 0) and (t < tIni+(stepSav+1)*dtSav) and (t+dt >= tIni+(stepSav+1)*dtSav) :
             print "DEBUG  Trunc dt for solution saving"
-            # truncation of the dt for solution saving
             dt = (tIni+(stepSav+1)*dtSav) - t + 1.e-5*dt
+        if (t < tIni+(stepSpl+1)*dtSpl) and (t+1.15*dt >= tIni+(stepSpl+1)*dtSpl) :
+            print "DEBUG  Increase dt for hessian sampling"
+            dt = (tIni+(stepSpl+1)*dtSpl) - t + 1.e-5*dt
+        if (t < options.nbrGlobSav*options.dtSav) and (t+1.15*dt >= options.nbrGlobSav*options.dtSav) :
+            print "DEBUG  Increase dt for solution saving"
+            dt = options.nbrGlobSav*options.dtSav - t + 1.e-5*dt
+        if (t+1.15*dt > tEnd) : 
+            print "DEBUG  Increase dt to final time"
+            endSol = 1
+            dt = tEnd - t + + 1.e-5*dt
         if (t < tIni+(stepSpl+1)*dtSpl) and (t+dt >= tIni+(stepSpl+1)*dtSpl) :
             print "DEBUG  Trunc dt for hessian sampling"
-            # truncation of the dt for hessian sampling
             dt = (tIni+(stepSpl+1)*dtSpl) - t + 1.e-5*dt
         if (t < options.nbrGlobSav*options.dtSav) and (t+dt >= options.nbrGlobSav*options.dtSav) :
             print "DEBUG  Trunc dt for solution saving"
-            # truncation of the dt for hessian sampling
             dt = options.nbrGlobSav*options.dtSav - t + 1.e-5*dt
         endSol = 0
         if (t+dt > tEnd) : 
@@ -218,7 +213,19 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
         
         print "DEBUG  start solve"; sys.stdout.flush()
         chrono1 = clock()
-        A_solv.solve()
+        for trySolve in range(2):
+            try:
+                A_solv.solve()
+            except RuntimeError:
+                if pc == 'ilu' : pc = 'sor'
+                else : pc = 'ilu'
+                A_solv = LinearVariationalSolver(A_prob, solver_parameters={'pc_type': pc,
+                                                                'ksp_max_it' : 1500,
+                                                                'ksp_converged_reason': True,
+                                                                'ksp_monitor_true_residual': False,
+                                                                'ksp_view': False})
+                continue
+            break
         chrono2 = clock()
         print "DEBUG  end solve. Elapsed time: %1.2e" %(chrono2-chrono1); sys.stdout.flush()
 
@@ -255,6 +262,8 @@ def solveAdvec(meshd, solIni, tIni, tEnd, options):
 
         chronostep2 = clock()
         print "DEBUG  .Step elapsed time: %1.2e" %(chronostep2-chronostep1);  sys.stdout.flush()
+
+    print "DEBUG  End solve"
             
     return [u0, hessian, t]
 
@@ -293,4 +302,30 @@ def hessIniAdvec(meshd, sol):
 
     
     
-    
+if __name__ == '__main__':
+
+    parameters["pyop2_options"]["log_level"] = "WARNING"
+    parameters["assembly_cache"]["enabled"] = False
+
+    options = Options(algo=1,
+                      dim = 3,
+                      nbrAdap = 50,
+                      nbrSpl = 15,
+                      T = 6,
+                      Tend = 3,
+                      cfl = 1.3,
+                      nbrSav = 5,
+                      snes_rtol = 1e-2,
+                      ksp_rtol = 1e-5)
+
+    j = 16
+    dtAdap = float(options.Tend)/options.nbrAdap
+    print "DEBUG  reading mesh"
+    meshd = Meshd(readGmfMesh("solIni", options.dim, "boundary_ids"))
+    print "DEBUG  reading sol"
+    solIni = Function(FunctionSpace(meshd.mesh, 'CG', 1))
+    readGmfSol(meshd.mesh, solIni, "solIni", 1, meshd.section)
+    tIni, tEnd  = (j-1)*dtAdap, j*dtAdap
+    print "DEBUG  tIni -> tEnd : %1.3e -> %1.3e" %(tIni, tEnd)
+    solveAdvec(meshd, solIni, tIni, tEnd, options)
+
