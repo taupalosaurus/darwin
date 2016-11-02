@@ -5,7 +5,7 @@ import numpy as np
 class Meshd() :
     
     
-    def __init__(self, mesh) :
+    def __init__(self, mesh, reorderPlex=True, computeAltMin=True) :
         
         self.mesh = mesh 
 
@@ -17,54 +17,17 @@ class Meshd() :
         entity_dofs[0] = self.mesh.geometric_dimension()
         self.section = self.mesh._plex.createSection([1], entity_dofs, perm=self.mesh.topology._plex_renumbering)
 
-        #dmCoords = self.mesh.topology._plex.getCoordinateDM()
-        #dmCoords.setDefaultSection(self.section)
-        with self.mesh.coordinates.dat.vec_ro as coords:
-            self.mesh.topology._plex.setCoordinatesLocal(coords)
+        if reorderPlex :
+            with self.mesh.coordinates.dat.vec_ro as coords:
+                self.mesh.topology._plex.setCoordinatesLocal(coords)
 
-        #self.computeVerMinAlt()
-        if self.mesh._plex == 2:
-            self.altMin.interpolate(2*CellVolume(self.mesh)/MaxCellEdgeLength(self.mesh))
-        else :
-            self.altMin.interpolate(Circumradius(self.mesh)*MinCellEdgeLength(self.mesh)/MaxCellEdgeLength(self.mesh))
-            print "#### WARNING minimal altitude computed very approximately in 3D"
-#            exit(1)
-#            self.altMin.interpolate(6*CellVolume(self.mesh)/MaxCellFacetArea(self.mesh))
-
-        
-    def computeVerMinAlt(self) :  # altMin is a Function(FunctionSpace(mesh, 'CG', 1))  
-    
-        plex = self.mesh._plex
-        vStart, vEnd = plex.getDepthStratum(0)
-        cStart, cEnd = plex.getHeightStratum(0)
-    
-        for iVer in range(0, vEnd-vStart) :
-            self.altMin.dat.data[iVer] = 1e10
-    
-        for c in range(cStart, cEnd) :
-    
-            ver = []
-            ne = []
-            closure = plex.getTransitiveClosure(c)[0]
-            for cl in closure:
-                if cl >= vStart and cl < vEnd : 
-                    off = self.section.getOffset(cl)/2
-                    ver.append(self.mesh.coordinates.dat.data[off])
-            # normals to edges
-            ne.append([ver[0][1]-ver[1][1], ver[1][0]-ver[0][0]])
-            ne.append([ver[1][1]-ver[2][1], ver[2][0]-ver[1][0]])
-            ne.append([ver[2][1]-ver[0][1], ver[0][0]-ver[2][0]])
-            are = 0.5*abs(ne[0][0]*ne[1][1]-ne[0][1]*ne[1][0])
-            edgLenMax = ne[0][0]*ne[0][0] + ne[0][1]*ne[0][1]
-            edgLenMax = max(edgLenMax, ne[1][0]*ne[1][0] + ne[1][1]*ne[1][1])
-            edgLenMax = max(edgLenMax, ne[2][0]*ne[2][0] + ne[2][1]*ne[2][1])
-            altMinTri = 2*are/sqrt(edgLenMax)
-            for cl in closure:
-                if cl >= vStart and cl < vEnd : 
-                    off = self.section.getOffset(cl)/2
-                    self.altMin.dat.data[off] = min(self.altMin.dat.data[off], altMinTri)
-    
-    
+        if computeAltMin:
+            if self.mesh._topological_dimension == 2:
+                self.altMin.interpolate(2*CellVolume(self.mesh)/MaxCellEdgeLength(self.mesh))
+            else :
+                self.altMin.interpolate(Circumradius(self.mesh)*MinCellEdgeLength(self.mesh)/MaxCellEdgeLength(self.mesh))
+                print "#### WARNING minimal altitude computed very approximately in 3D"
+#                self.altMin.interpolate(6*CellVolume(self.mesh)/MaxCellFacetArea(self.mesh))
         
         
         
