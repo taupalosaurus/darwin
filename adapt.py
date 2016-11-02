@@ -4,19 +4,100 @@ from inout import *
 from mesh import *
 from numpy import linalg as LA
 
+import time, gc
+
 from hessian import *
 
 
 
-def adaptInternal(meshd, metric) :
-    
-    newmesh = adapt(meshd.mesh, metric)
+def adaptInternal(j,dim) :
+    print "DEBUG  read mesh and metric %d" %j; sys.stdout.flush()
+    chrono1 = time.clock()
+    mesh = Meshd(readGmfMesh("bubble.%d" %j, dim, "boundary_ids"), computeAltMin=False)
+    metric = Function(TensorFunctionSpace(mesh.mesh, 'CG', 1))
+    readGmfSol(mesh.mesh, metric, "metric.%d" %j, 5, mesh.section)
+    chrono2 = time.clock()
+    print "DEBUG  end read mesh and metric. Elapsed time: %1.2e" %(chrono2-chrono1);  sys.stdout.flush()
+    print "##### Adap procedure started %d" %j ; sys.stdout.flush()
+    chrono1 = time.clock()
+    newmesh = adapt(mesh.mesh, metric)
+    gc.collect()
     newmeshd = Meshd(newmesh)
+    chrono2 = time.clock()
+    print "##### Adap procedure completed %d. Elapsed time: %1.2e" %(j, chrono2-chrono1) ; sys.stdout.flush()
+    print "DEBUG  write mesh"; sys.stdout.flush()
+    chrono1 = time.clock()
+    writeGmf(newmeshd.mesh, 1, "boundary_ids", "newmesh.%d" % j, None, None, None, newmeshd.section)
+    chrono2 = time.clock()
+    print "DEBUG  end write mesh. Elapsed time: %1.2e" %(chrono2-chrono1);  sys.stdout.flush()
+
+
+def adaptInternal_star(j_dim):
+    return adaptInternal(*j_dim)
+
+
+
+
+def computeGlobalNormalizationCoef(options, meshd, H, coef) :
+
+    p = options.p
+    if options.dim == 2 :
+        lpPow1 = -1./(2*p+2)
+        lpPow2 = float(p)/(2*p+2)
+    else :
+        lpPow1 = -1./(2*p+3)
+        lpPow2 = float(p)/(2*p+3)
+
+    mesh = meshd.mesh
+    V = FunctionSpace(mesh, 'CG', 1)    
+    detH = Function(V)
+    # compute determinant
+    detH.interpolate(det(H))
+    detH_pow1 = np.power(detH.dat.data, lpPow1)
+    H.dat.data[...] *= detH_pow1[:, np.newaxis, np.newaxis]
+    detH.dat.data[...] = np.power(detH.dat.data, lpPow2)
     
-    return newmeshd
+    # intergrate determinant over space and assemble gloabl normalization term
+    coef += assemble(detH*dx)
+
+    return coef
 
 
-def normalizeUnsteadyMetrics(hessianMetrics, meshes, options) :
+
+def normalizeUnsteadyMetrics(options, coef) :
+
+    N = options.N*options.nbrAdap
+    a = options.a
+    usa2 = 1./(a*a)
+    hmin = options.hmin
+    ushmin2 = 1./(hmin*hmin)
+    hmax = options.hmax
+    ushmax2 = 1./(hmax*hmax)
+    if options.dim == 2 :
+        lpPow = 1.
+    else :
+        lpPow = 2./3
+
+    cofGlob = pow(float(N)/coef, lpPow)
+
+    lbdMin = op2.Global(1, ushmax2, dtype=float);
+    lbdMax = op2.Global(1, ushmin2, dtype=float);
+    rat = op2.Global(1, usa2, dtype=float);
+    
+    for j in range(1,options.nbrAdap+1) :
+
+        meshd = Meshd(readGmfMesh("bubble.%d" %j, options.dim, "boundary_ids"), reorderPlex=False, computeAltMin=False)
+        H = Function(TensorFunctionSpace(meshd.mesh, 'CG', 1))
+        readGmfSol(meshd.mesh, H, "hesmet.%d" %j, 5, meshd.section)
+        H.dat.data[...] *= cofGlob
+        op2.par_loop(options.absTruncMetric_kernel, H.node_set().superset, H.dat(op2.RW), lbdMin(op2.READ), lbdMax(op2.READ), rat(op2.READ))
+        writeGmf(meshd.mesh, 0, "", "", H, 5, "metric.%d"%j, meshd.section)
+        gc.collect()
+
+
+
+
+def normalizeUnsteadyMetrics_old(options) :
     
     p = options.p
     N = options.N*options.nbrAdap
@@ -34,6 +115,16 @@ def normalizeUnsteadyMetrics(hessianMetrics, meshes, options) :
         lpPow1 = -1./(2*p+3)
         lpPow2 = float(p)/(2*p+3)
         lpPow3 = 2./3
+
+    meshes = []
+    hessianMetrics = []
+
+    for j in range(1, options.nbrAdap+1) :
+        meshd = Meshd(readGmfMesh("bubble.%d" %j, options.dim, "boundary_ids"), reorderPlex=False, computeAltMin=False)
+        H = Function(TensorFunctionSpace(meshd.mesh, 'CG', 1))
+        readGmfSol(meshd.mesh, H, "hesmet.%d" %j, 5, meshd.section)
+        meshes.append(meshd)
+        hessianMetrics.append(H)
     
     cofGlob = 0
     for H, meshd in zip(hessianMetrics, meshes) :
@@ -65,12 +156,9 @@ def normalizeUnsteadyMetrics(hessianMetrics, meshes, options) :
 
         op2.par_loop(options.absTruncMetric_kernel, H.node_set().superset, H.dat(op2.RW), lbdMin(op2.READ), lbdMax(op2.READ), rat(op2.READ))
 
-        writeGmf(mesh, 1, "boundary_ids", "metric.%d" % j, H, 5, "metric.%d"%j, meshd.section)
+        writeGmf(mesh, 0, "", "", H, 5, "metric.%d"%j, meshd.section)
         
-#        writeMesh(meshd, "metric.%d" % j)
-#        writeMetric(meshd, H, "metric.%d" % j)
-        
-    return hessianMetrics
+
     
     
     
@@ -158,3 +246,12 @@ def computeSteadyMetric(meshd, hessian, sol, options) :
         print "####  ERROR ivalid option %d for steady metric" % options.steadyMetric
         exit(1)
     return metric
+
+
+if __name__ == '__main__':
+
+    parameters["pyop2_options"]["log_level"] = "WARNING"
+    parameters["assembly_cache"]["enabled"] = False
+
+    adaptInternal(4,3)
+    adaptInternal(6,3)
