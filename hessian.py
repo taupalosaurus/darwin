@@ -174,7 +174,7 @@ computeEigVal3_str = """
   nrmInv = 1. / nrm;
   for (i=0; i<6; ++i) mat[i] *= nrmInv;
   
-
+  // P(X) = X^3 + a*X^2 + b*X^3 + c
   a = -mat[0]-mat[3]-mat[5];			// = -Trace(mat)
   b = mat[0]*mat[3] + mat[0]*mat[5] + mat[3]*mat[5]
     - mat[1]*mat[1] - mat[2]*mat[2] - mat[4]*mat[4];
@@ -231,14 +231,13 @@ computeEigVal3_str = """
   // TODO is this faster than using Cardano's formulas ?
   
   x0  = -a*us3;               // root of P''
-  ppx = b-a*a*us3;            // P'(x0) 
-  px = (2*a*a*us6+b)*a*us3+c;	// P(x0)
+  ppx = b+a*x0;               // P'(x0) 
+  px = (-2*x0*x0+b)*x0+c;	      // P(x0)
   
   xmin = x0;
   pmin = fabs(px);
   
   for (i=0; i<100; ++i) {
-    
     x1  = x0-px/ppx;
     px = (((x1+a)*x1)+b)*x1+c;
     if ( fabs(px) < 1e-18 ) {
@@ -254,6 +253,7 @@ computeEigVal3_str = """
       eigVal[1] = xmin;
       if ( pmin > 1e-12 ){ // check that P(xmin) really close to 0
 	      printf(\"ERRORKERNEL pmin: %1.3e, dist: %1.2e i: %d    mat: %1.15e %1.15e %1.15e %1.15e %1.15e %1.15e\\n\", pmin, fabs((x1-x0)/x1), i, mat[0], mat[1], mat[2], mat[3], mat[4], mat[5]);
+        printf(\"ERRORKERNEL                                   met: %1.15e %1.15e %1.15e %1.15e %1.15e %1.15e\\n\", nrm*mat[0], nrm*mat[1], nrm*mat[2], nrm*mat[3], nrm*mat[4], nrm*mat[5]);
         printf(\"ERRORKERNEL  eigVals so far: %1.8e  %1.8e %1.8e\\n\", eigVal[0], eigVal[1], eigVal[2]);
         exit(22);
       }
