@@ -91,7 +91,6 @@ def ptfx (options) :
             # normalizeMetric
             print "########## Metrics computation" ; sys.stdout.flush()
             chrono1 = time.clock()
-            globNormCoef = 2.257682503752497780e+02
             metrics = normalizeUnsteadyMetrics(options, globNormCoef)
             print "########## End metrics computation. Elapsed time: %1.2e" %(chrono2-chrono1) ; sys.stdout.flush()
             gc.collect()
