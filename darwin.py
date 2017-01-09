@@ -52,41 +52,41 @@ def main() :
 #                      nbrSav = 3,
 #                      snes_rtol = 1e-2,
 #                      ksp_rtol = 1e-5)
-#    options = Options(algo=1,
-#                      dim = 3,
-#                      nbrPtfxIte=5,
-#                      nbrAdap = 30,
-#                      nbrSpl = 15,
-#                      p = 2,
-#                      N = 300000,
-#                      hmin = 0.0008,
-#                      hmax = 0.5,
-#                      a = 100,
-#                      T = 6,
-#                      Tend = 1.5,
-#                      cfl = 5.,
-#                      n = 100,
-#                      nbrSav = 5,
-#                      snes_rtol = 1e-2,
-#                      ksp_rtol = 1e-5)
     options = Options(algo=1,
-                      dim = 2,
-                      nbrPtfxIte=6,
-                      nbrAdap = 90,
-                      nbrSpl = 20,
+                      dim = 3,
+                      nbrPtfxIte=5,
+                      nbrAdap = 30,
+                      nbrSpl = 15,
                       p = 2,
-                      N = 80000,
-                      hmin = 0.0007,
-                      hmax = 0.3,
-                      a = 25,
+                      N = 300000,
+                      hmin = 0.0008,
+                      hmax = 0.5,
+                      a = 100,
                       T = 6,
-                      Tend = 6,
-                      cfl = 1.5,
-                      n = 300,
-                      nbrSav = 4,
+                      Tend = 1.5,
+                      cfl = 5.,
+                      n = 100,
+                      nbrSav = 5,
                       snes_rtol = 1e-2,
                       ksp_rtol = 1e-5)
-    
+#    options = Options(algo=1,
+#                      dim = 2,
+#                      nbrPtfxIte=6,
+#                      nbrAdap = 90,
+#                      nbrSpl = 20,
+#                      p = 2,
+#                      N = 80000,
+#                      hmin = 0.0007,
+#                      hmax = 0.3,
+#                      a = 25,
+#                      T = 6,
+#                      Tend = 6,
+#                      cfl = 1.5,
+#                      n = 300,
+#                      nbrSav = 4,
+#                      snes_rtol = 1e-2,
+#                      ksp_rtol = 1e-5)
+#    
 #    options = Options( algo = 2,
 #                       adaptStepFreq = 3,
 #                       p = 2,
@@ -102,7 +102,7 @@ def main() :
 #                       nbrSavTot = 150)
 
 #    options = Options(dim = 2)
-#    options.setSmallTest()
+    options.setSmallTest3d()
     options.printOptions()
     sys.stdout.flush()
 
@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
 
     parameters["pyop2_options"]["log_level"] = "WARNING"
-    parameters["assembly_cache"]["enabled"] = False
+  #  parameters["assembly_cache"]["enabled"] = False
 
     tini = time.clock()
 
