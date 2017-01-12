@@ -52,23 +52,23 @@ def main() :
 #                      nbrSav = 3,
 #                      snes_rtol = 1e-2,
 #                      ksp_rtol = 1e-5)
-    options = Options(algo=1,
-                      dim = 3,
-                      nbrPtfxIte=5,
-                      nbrAdap = 30,
-                      nbrSpl = 15,
-                      p = 2,
-                      N = 300000,
-                      hmin = 0.0008,
-                      hmax = 0.5,
-                      a = 100,
-                      T = 6,
-                      Tend = 1.5,
-                      cfl = 5.,
-                      n = 100,
-                      nbrSav = 5,
-                      snes_rtol = 1e-2,
-                      ksp_rtol = 1e-5)
+#    options = Options(algo=1,
+#                      dim = 3,
+#                      nbrPtfxIte=5,
+#                      nbrAdap = 30,
+#                      nbrSpl = 15,
+#                      p = 2,
+#                      N = 300000,
+#                      hmin = 0.0008,
+#                      hmax = 0.5,
+#                      a = 100,
+#                      T = 6,
+#                      Tend = 1.5,
+#                      cfl = 5.,
+#                      n = 100,
+#                      nbrSav = 5,
+#                      snes_rtol = 1e-2,
+#                      ksp_rtol = 1e-5)
 #    options = Options(algo=1,
 #                      dim = 2,
 #                      nbrPtfxIte=6,
@@ -87,22 +87,22 @@ def main() :
 #                      snes_rtol = 1e-2,
 #                      ksp_rtol = 1e-5)
 #    
-#    options = Options( algo = 2,
-#                       adaptStepFreq = 3,
-#                       p = 2,
-#                       N = 100,
-#                       a = 1000,
-#                       hmin = 0.001,
-#                       hmax = 0.3,
-#                       steadyMetric = 1,
-#                       T = 6,
-#                       Tend = 1,
-#                       n = 150,
-#                       cfl = 0.95,
-#                       nbrSavTot = 150)
+    options = Options(algo = 2,
+                      dim = 2,
+                      equation = "shallow_water",
+                      adaptStepFreq = 5,
+                      p = 2,
+                      N = 12,
+                      a = 100,
+                      hmin = 2e3,
+                      hmax = 5e5,
+                      steadyMetric = 1,
+                      Tend = 1500,
+                      n = 100,
+                      nbrSavTot = 150)
 
 #    options = Options(dim = 2)
-    options.setSmallTest3d()
+#    options.setSmallTest3d()
     options.printOptions()
     sys.stdout.flush()
 
@@ -110,7 +110,10 @@ def main() :
     if options.algo == 1 :
         ptfx(options)
     elif options.algo == 2 :
-        freqRemesh(options)
+        if options.equation == "shallow_water":
+            freqRemesh_swe(options)
+        else:
+            freqRemesh(options)
     else :
         print "####  ERROR  only two adaptation algrithms"
 

@@ -8,23 +8,51 @@ def interpol(u, meshd, unew, meshdnew):
     mesh = meshd.mesh
     meshnew = meshdnew.mesh
     dim = mesh._topological_dimension
-    plexnew = meshnew._plex
-    vStart, vEnd = plexnew.getDepthStratum(0)
-            
+
     notInDomain = []
-    for v in range(vStart, vEnd):
-        offnew = meshdnew.section.getOffset(v)/dim
-        newCrd = meshnew.coordinates.dat.data[offnew]
-        val = u.at(newCrd)
-        try :
-            val = u.at(newCrd)
-        except PointNotInDomainError :
-            print "####  New vertex not in domain: %f %f" % (newCrd[0], newCrd[1])
-            val = 0.
-            notInDomain.append([v,INF,-1])   #TODO  I should store newCrd here instead of v
-        finally :
-            unew.dat.data[offnew] = val
+
+    print unew.ufl_element().family(), unew.ufl_element().degree()
+
+    if unew.ufl_element().family() == 'Lagrange' and unew.ufl_element().degree() == 1 :
+        plexnew = meshnew._plex
+        vStart, vEnd = plexnew.getDepthStratum(0)
+            
     
+        for v in range(vStart, vEnd):
+            offnew = meshdnew.section.getOffset(v)/dim
+            newCrd = meshnew.coordinates.dat.data[offnew]
+            try :
+                val = u.at(newCrd)
+            except PointNotInDomainError :
+                print "####  New vertex not in domain: %f %f" % (newCrd[0], newCrd[1])
+                val = 0.
+                notInDomain.append([v,INF,-1])   #TODO  I should store newCrd here instead of v
+            finally :
+                unew.dat.data[offnew] = val
+
+    elif unew.ufl_element().family() == 'Lagrange' and unew.ufl_element().degree() == 2 :
+
+        newCoordinates = Function(VectorFunctionSpace(meshnew, 'CG', 2)).interpolate(meshnew.coordinates)
+        ndofs = newCoordinates.dat.data.size/dim
+
+        print "DEBUG  ndofs: %d" % ndofs
+        print "coords.dat.data.size: %d" % newCoordinates.dat.data.size
+        print "unew.dat.data.size: %d" % unew.dat.data.size
+
+        for d in range(ndofs):
+            newCrd = newCoordinates.dat.data[d]
+            try :
+                val = u.at(newCrd)
+            except PointNotInDomainError :
+                print "####  New vertex not in domain: %f %f" % (newCrd[0], newCrd[1])
+                val = 0.
+                notInDomain.append([d,INF,-1])   #TODO  I should store newCrd here instead of v
+            finally :
+                unew.dat.data[d] = val
+  
+    else :
+        print "ERROR  Interpolation for fields other than CG1 or CG2 not yet implemented"
+        exit(13)        
     
     if len(notInDomain) > 0 :
         print "####  Warning: number of points not in domain: %d / %d" % (len(notInDomain), meshnew.topology.num_vertices())

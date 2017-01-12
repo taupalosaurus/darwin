@@ -5,6 +5,7 @@ class Options :
     
     
     def __init__(self, 
+                 equation = "advection",
                  dim = 2,
                  algo = 1,
                  nbrPtfxIte=1,
@@ -29,6 +30,9 @@ class Options :
     
     
         self.dim = dim
+        self.equation = equation
+        if self.equation != "advection" and self.equation != "shallow_water":
+            print "ERROR: wrong value for equation argument: %s\n" % self.equation
         
         # adaptation parameters
         self.algo = algo  # 1 for ptfx, 2 for frequent remeshes    
@@ -187,6 +191,8 @@ void absTruncMetric_kernel(double * hess, double *lbdmin, double *lbdmax, double
         print "\n############## Options ####################"
         
         print "\n## Dimension: %d" % self.dim
+
+        print "\n## Equations considered: %s" % self.equation        
 
         print "\n## Adaptation parameters"
         if self.algo == 1 :

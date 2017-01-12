@@ -36,6 +36,13 @@ def adaptInternal_star(j_dim):
     return adaptInternal(*j_dim)
 
 
+def adaptInternal_kernel(meshd, metric) :
+    
+    newmesh = adapt(meshd.mesh, metric)
+    newmeshd = Meshd(newmesh)
+    
+    return newmeshd
+
 
 
 def computeGlobalNormalizationCoef(options, meshd, H, coef) :
@@ -200,9 +207,9 @@ def computeSteadyMetric(meshd, hessian, sol, options) :
           metric.dat.data[iVer][1,0] = metric.dat.data[iVer][0,1]
           metric.dat.data[iVer][1,1] = lbd1*v1[1]*v1[1] + lbd2*v2[1]*v2[1];
     elif options.steadyMetric == 2:
-        print "####  ERROR option 2 for steady metric not implemented yet"
-        exit(1)
-    elif metOpt == 'Loseille2011' :
+#        print "####  ERROR option 2 for steady metric not implemented yet"
+#        exit(1)
+#    elif metOpt == 'Loseille2011' :
         # computation of the metric of Loseille 2011
         detHes = Function(meshd.V)
         for iVer in range(mesh.topology.num_vertices()):
