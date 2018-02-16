@@ -11,25 +11,25 @@ from hessian import *
 
 
 def adaptInternal(j,dim) :
-    print "DEBUG  read mesh and metric %d" %j; sys.stdout.flush()
+    print("DEBUG  read mesh and metric %d" %j); sys.stdout.flush()
     chrono1 = time.clock()
-    mesh = Meshd(readGmfMesh("bubble.%d" %j, dim, "boundary_ids"), computeAltMin=False)
+    mesh = Meshd(readGmfMesh(b"hesmet.%d" %j, dim, b"boundary_ids"), computeAltMin=False)
     metric = Function(TensorFunctionSpace(mesh.mesh, 'CG', 1))
-    readGmfSol(mesh.mesh, metric, "metric.%d" %j, 5, mesh.section)
+    readGmfSol(mesh.mesh, metric, b"metric.%d" %j, 5, mesh.section)
     chrono2 = time.clock()
-    print "DEBUG  end read mesh and metric. Elapsed time: %1.2e" %(chrono2-chrono1);  sys.stdout.flush()
-    print "##### Adap procedure started %d" %j ; sys.stdout.flush()
+    print("DEBUG  end read mesh and metric. Elapsed time: %1.2e" %(chrono2-chrono1));  sys.stdout.flush()
+    print("##### Adap procedure started %d" %j ); sys.stdout.flush()
     chrono1 = time.clock()
     newmesh = adapt(mesh.mesh, metric)
     gc.collect()
     newmeshd = Meshd(newmesh)
     chrono2 = time.clock()
-    print "##### Adap procedure completed %d. Elapsed time: %1.2e" %(j, chrono2-chrono1) ; sys.stdout.flush()
-    print "DEBUG  write mesh"; sys.stdout.flush()
+    print("##### Adap procedure completed %d. Elapsed time: %1.2e" %(j, chrono2-chrono1) ); sys.stdout.flush()
+    print("DEBUG  write mesh"); sys.stdout.flush()
     chrono1 = time.clock()
-    writeGmf(newmeshd.mesh, 1, "boundary_ids", "newmesh.%d" % j, None, None, None, newmeshd.section)
+    writeGmf(newmeshd.mesh, 1, b"boundary_ids", b"newmesh.%d" % j, None, None, None, newmeshd.section)
     chrono2 = time.clock()
-    print "DEBUG  end write mesh. Elapsed time: %1.2e" %(chrono2-chrono1);  sys.stdout.flush()
+    print("DEBUG  end write mesh. Elapsed time: %1.2e" %(chrono2-chrono1));  sys.stdout.flush()
 
 
 def adaptInternal_star(j_dim):
@@ -86,12 +86,12 @@ def normalizeUnsteadyMetrics(options, coef) :
     
     for j in range(1,options.nbrAdap+1) :
 
-        meshd = Meshd(readGmfMesh("bubble.%d" %j, options.dim, "boundary_ids"), reorderPlex=False, computeAltMin=False)
+        meshd = Meshd(readGmfMesh(b"hesmet.%d" %j, options.dim, b"boundary_ids"), reorderPlex=False, computeAltMin=False)
         H = Function(TensorFunctionSpace(meshd.mesh, 'CG', 1))
-        readGmfSol(meshd.mesh, H, "hesmet.%d" %j, 5, meshd.section)
+        readGmfSol(meshd.mesh, H, b"hesmet.%d" %j, 5, meshd.section)
         H.dat.data[...] *= cofGlob
         op2.par_loop(options.absTruncMetric_kernel, H.node_set().superset, H.dat(op2.RW), lbdMin(op2.READ), lbdMax(op2.READ), rat(op2.READ))
-        writeGmf(meshd.mesh, 0, "", "", H, 5, "metric.%d"%j, meshd.section)
+        writeGmf(meshd.mesh, 0, b"", b"", H, 5, b"metric.%d"%j, meshd.section)
         gc.collect()
 
 
@@ -120,9 +120,9 @@ def normalizeUnsteadyMetrics_old(options) :
     hessianMetrics = []
 
     for j in range(1, options.nbrAdap+1) :
-        meshd = Meshd(readGmfMesh("bubble.%d" %j, options.dim, "boundary_ids"), reorderPlex=False, computeAltMin=False)
+        meshd = Meshd(readGmfMesh(b"hesmet.%d" %j, options.dim, b"boundary_ids"), reorderPlex=False, computeAltMin=False)
         H = Function(TensorFunctionSpace(meshd.mesh, 'CG', 1))
-        readGmfSol(meshd.mesh, H, "hesmet.%d" %j, 5, meshd.section)
+        readGmfSol(meshd.mesh, H, b"hesmet.%d" %j, 5, meshd.section)
         meshes.append(meshd)
         hessianMetrics.append(H)
     
@@ -156,7 +156,7 @@ def normalizeUnsteadyMetrics_old(options) :
 
         op2.par_loop(options.absTruncMetric_kernel, H.node_set().superset, H.dat(op2.RW), lbdMin(op2.READ), lbdMax(op2.READ), rat(op2.READ))
 
-        writeGmf(mesh, 0, "", "", H, 5, "metric.%d"%j, meshd.section)
+        writeGmf(mesh, 0, b"", b"", H, 5, b"metric.%d"%j, meshd.section)
         
 
     
@@ -200,7 +200,7 @@ def computeSteadyMetric(meshd, hessian, sol, options) :
           metric.dat.data[iVer][1,0] = metric.dat.data[iVer][0,1]
           metric.dat.data[iVer][1,1] = lbd1*v1[1]*v1[1] + lbd2*v2[1]*v2[1];
     elif options.steadyMetric == 2:
-        print "####  ERROR option 2 for steady metric not implemented yet"
+        print("####  ERROR option 2 for steady metric not implemented yet")
         exit(1)
     elif metOpt == 'Loseille2011' :
         # computation of the metric of Loseille 2011
@@ -243,7 +243,7 @@ def computeSteadyMetric(meshd, hessian, sol, options) :
             metric.dat.data[iVer][1,0] = metric.dat.data[iVer][0,1]
             metric.dat.data[iVer][1,1] = lbd1*v1[1]*v1[1] + lbd2*v2[1]*v2[1];
     else :
-        print "####  ERROR ivalid option %d for steady metric" % options.steadyMetric
+        print("####  ERROR ivalid option %d for steady metric" % options.steadyMetric)
         exit(1)
     return metric
 

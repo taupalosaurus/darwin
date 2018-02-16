@@ -184,44 +184,44 @@ void absTruncMetric_kernel(double * hess, double *lbdmin, double *lbdmax, double
 
     def printOptions(self):
 
-        print "\n############## Options ####################"
+        print("\n############## Options ####################")
         
-        print "\n## Dimension: %d" % self.dim
+        print("\n## Dimension: %d" % self.dim)
 
-        print "\n## Adaptation parameters"
+        print("\n## Adaptation parameters")
         if self.algo == 1 :
-            print "    algo      : global fixed-point"
-            print "    nbrPtfxIte: %d" % self.nbrPtfxIte
-            print "    nbrAdap   : %d" % self.nbrAdap
-            print "    nbrSpl    : %d" % self.nbrSpl
+            print("    algo      : global fixed-point")
+            print("    nbrPtfxIte: %d" % self.nbrPtfxIte)
+            print("    nbrAdap   : %d" % self.nbrAdap)
+            print("    nbrSpl    : %d" % self.nbrSpl)
         elif self.algo == 2 :
-            print "    algo         : frequent remeshings"
-            print "    adaptStepFreq: %d" % self.adaptStepFreq
+            print("    algo         : frequent remeshings")
+            print("    adaptStepFreq: %d" % self.adaptStepFreq)
         else :
-            print "####  ERROR, algo out of range: %d not in (1,2)" % self.algo
+            print("####  ERROR, algo out of range: %d not in (1,2)" % self.algo)
             exit(1)
 
-        print "\n## Metrics computation parameters"
-        print "    p           : %d" % self.p
-        print "    N           : %d" % self.N
-        print "    a           : %f" % self.a
-        print "    hmin        : %f" % self.hmin
-        print "    hmax        : %f" % self.hmax
+        print("\n## Metrics computation parameters")
+        print("    p           : %d" % self.p)
+        print("    N           : %d" % self.N)
+        print("    a           : %f" % self.a)
+        print("    hmin        : %f" % self.hmin)
+        print("    hmax        : %f" % self.hmax)
         if self.algo == 2 :
-            print "    steadyMetric: %d" % self.steadyMetric
+            print("    steadyMetric: %d" % self.steadyMetric)
 
-        print "\n## Solver parameters"
-        print "    T        : %f"  % self.T
-        print "    Tend     : %f"  % self.Tend
-        print "    n        : %d"  % self.n
-        print "    cfl      : %f"  % self.cfl
+        print("\n## Solver parameters")
+        print("    T        : %f"  % self.T)
+        print("    Tend     : %f"  % self.Tend)
+        print("    n        : %d"  % self.n)
+        print("    cfl      : %f"  % self.cfl)
         if self.algo == 1:
-            print "    nbrSav   : %d"  % self.nbrSav
+            print("    nbrSav   : %d"  % self.nbrSav)
         elif self.algo == 2:
-            print "    nbrSavTot: %d"  % self.nbrSavTot
-            print "    dtSav    : %f"  % self.dtSav
+            print("    nbrSavTot: %d"  % self.nbrSavTot)
+            print("    dtSav    : %f"  % self.dtSav)
 
-        print "\n## PETSc SNES parameters for Hessian computations"
-        print "    snes_rtol : %1.1e" % self.snes_rtol
-        print "    ksp_rtol  : %1.1e" % self.ksp_rtol
+        print("\n## PETSc SNES parameters for Hessian computations")
+        print("    snes_rtol : %1.1e" % self.snes_rtol)
+        print("    ksp_rtol  : %1.1e" % self.ksp_rtol)
 

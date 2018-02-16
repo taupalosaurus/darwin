@@ -19,7 +19,7 @@ def interpol(u, meshd, unew, meshdnew):
         try :
             val = u.at(newCrd)
         except PointNotInDomainError :
-            print "####  New vertex not in domain: %f %f" % (newCrd[0], newCrd[1])
+            print("####  New vertex not in domain: %f %f" % (newCrd[0], newCrd[1]))
             val = 0.
             notInDomain.append([v,INF,-1])   #TODO  I should store newCrd here instead of v
         finally :
@@ -27,7 +27,7 @@ def interpol(u, meshd, unew, meshdnew):
     
     
     if len(notInDomain) > 0 :
-        print "####  Warning: number of points not in domain: %d / %d" % (len(notInDomain), meshnew.topology.num_vertices())
+        print("####  Warning: number of points not in domain: %d / %d" % (len(notInDomain), meshnew.topology.num_vertices()))
         if meshd.mesh._topological_dimension == 2:
             plex = mesh._plex
             fStart, fEnd = plex.getHeightStratum(1)  # edges/facets
@@ -83,17 +83,17 @@ def interpol(u, meshd, unew, meshdnew):
                         barCrd[1] = barCoord(crdP, crdC, 1)
                         barCrd[2] = barCoord(crdP, crdC, 2)
                         if barCrd[0] >= 0 and barCrd[1] >= 0 and barCrd[2] >= 0 :
-                            print "DEBUG  Cell : %1.4f %1.4f   %1.4f %1.4f   %1.4f %1.4f   bary:  %e %e %e" % (crdC[0][0], crdC[0][1], crdC[1][0], crdC[1][1], crdC[2][0], crdC[2][1], barCrd[0], barCrd[1], barCrd[2])
+                            print("DEBUG  Cell : %1.4f %1.4f   %1.4f %1.4f   %1.4f %1.4f   bary:  %e %e %e" % (crdC[0][0], crdC[0][1], crdC[1][0], crdC[1][1], crdC[2][0], crdC[2][1], barCrd[0], barCrd[1], barCrd[2]))
                             val = barCrd[0]*val[0] + barCrd[1]*val[1] + barCrd[2]*val[2]
                             inCell = 1
                             break
                     if not inCell :
-                        print "ERROR  vertex too far from the boundary but no enclosing cell found. Crd: %f %f" % (crdP[0], crdP[1])
+                        print("ERROR  vertex too far from the boundary but no enclosing cell found. Crd: %f %f" % (crdP[0], crdP[1]))
                         exit(16)
                 else :
                     f = nid[2]
                     if (f < fStart or f > fEnd):
-                        print "## ERROR   f: %d,   fStart: %d,  fEnd: %d" % (f, fStart, fEnd)
+                        print("## ERROR   f: %d,   fStart: %d,  fEnd: %d" % (f, fStart, fEnd))
                         exit(14)
                     closure = plex.getTransitiveClosure(f)[0]
                     crdE = [] # coordinates of the two vertices of the edge
@@ -104,7 +104,7 @@ def interpol(u, meshd, unew, meshdnew):
                             crdE.append(mesh.coordinates.dat.data[off])
                             val.append(u.dat.data[off])
                     if len(crdE) != 2 : 
-                        print "## ERROR  number of points in crdE: %d" % len(crdE)
+                        print("## ERROR  number of points in crdE: %d" % len(crdE))
                         exit(16)
                     edg =  [crdE[0][0]-crdE[1][0], crdE[0][1]-crdE[1][1]]   # normed vector e2e1
                     nrm = sqrt(edg[0]*edg[0] + edg[1]*edg[1])
@@ -115,5 +115,5 @@ def interpol(u, meshd, unew, meshdnew):
                     val = alpha*val[0] + (1-alpha)*val[1]
                 unew.dat.data[offnew] = val 
         else:   
-            print "#### ERROR no recovery procedure implemented in 3D yet"
+            print("#### ERROR no recovery procedure implemented in 3D yet")
             exit(1)    

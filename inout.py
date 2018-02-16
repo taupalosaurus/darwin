@@ -14,7 +14,7 @@ def writeMesh(meshd, name):
     coords = meshd.mesh.coordinates.dat.data
     
     f = open(name+".mesh", 'w')
-    print "  %%%% file %s.mesh opened" % name
+    print("  %%%% file %s.mesh opened" % name)
     f.write("MeshVersionFormatted 1\n\nDimension 2\n\n")
     f.write("Vertices\n%d\n" % nbrVer)
     for iVer in range(nbrVer):
@@ -47,7 +47,7 @@ def writeMetric(meshd, metric, name):
     NbrVer = vEnd - vStart
     
     f = open(name+".sol", 'w')
-    print "  %%%% file %s.sol opened" % name
+    print("  %%%% file %s.sol opened" % name)
     f.write("MeshVersionFormatted 2\n\nDimension 2\n\n")
     f.write("SolAtVertices\n%d\n1 3\n\n" % NbrVer)
     for iVer in range(NbrVer):
@@ -64,7 +64,7 @@ def writeMetric2(meshd, metric, name):
     NbrVer = vEnd - vStart
 
     f = open(name+".sol", 'w')
-    print "  %%%% file %s.sol opened" % name
+    print("  %%%% file %s.sol opened" % name)
     f.write("MeshVersionFormatted 2\n\nDimension 2\n\n")
     f.write("SolAtVertices\n%d\n1 3\n\n" % NbrVer)
     for iVer in range(NbrVer):
@@ -80,7 +80,7 @@ def writeSol(meshd, u, name):
     NbrVer = vEnd - vStart
 
     f = open(name+".sol", 'w')
-    print "  %%%% file %s.sol opened" % name
+    print("  %%%% file %s.sol opened" % name)
     f.write("MeshVersionFormatted 2\n\nDimension 2\n\n")
     f.write("SolAtVertices\n%d\n1 1\n\n" % NbrVer)
     for iVer in range(NbrVer):

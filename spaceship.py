@@ -1,5 +1,6 @@
 from firedrake import *
 import pyop2 as op2
+from thetis import *
 
 import sys, os, os.path
 from numpy import linalg as LA
@@ -16,14 +17,9 @@ from mesh import *
     
 def computeDtSpaceship(meshd, uv, options) :
     
-    print "DEBUG  start dt computation"; sys.stdout.flush()
-    chrono1 = clock()
-
-    dt = (meshd.altMin.dat.data / (cn.dat.data+1e-10)).min()
+#    dt = (meshd.altMin.dat.data / (cn.dat.data+1e-10)).min()
+    dt = 1
     dt *= options.cfl
-
-    chrono2 = clock()
-    print "DEBUG  end dt computation. Elapsed time : %1.2es" % (chrono2-chrono1); sys.stdout.flush()
 
     return dt
 
@@ -31,9 +27,6 @@ def computeDtSpaceship(meshd, uv, options) :
     
 def computeAvgHessian(meshd, sol, t, tIni, tEnd, nbrSpl, H, hessian, options) :
     
-    print "DEBUG  hessian-metric assembly"; sys.stdout.flush()
-    chrono1 = clock()
-
     mesh = meshd.mesh
 
     detMax = Function(meshd.V).interpolate(abs(det(H))).dat.data.max()   
@@ -49,15 +42,13 @@ def computeAvgHessian(meshd, sol, t, tIni, tEnd, nbrSpl, H, hessian, options) :
     if (t == tIni) or (t == tEnd) : cof *= 0.5
     hessian.dat.data[...] += cof*H.dat.data
 
-    chrono2 = clock()
-    print "DEBUG  end Hessian-metric assembly. Elapsed time: %1.2e" %(chrono2-chrono1); sys.stdout.flush()
 
 
-
-
-def solveSpaceship(meshd, uv_init, elev_init, tIni, tEnd, iteration, options):
+def solveSpaceship(meshd, uv_init, elev_init, tIni, tEnd, iteration, iteAdapt, options):
     
     mesh2d = meshd.mesh
+
+    uvn = Function(meshd.V)
         
     # Solver for hessian computation
     M = TensorFunctionSpace(mesh2d, 'CG', 1)
@@ -65,8 +56,8 @@ def solveSpaceship(meshd, uv_init, elev_init, tIni, tEnd, iteration, options):
     sigma = TestFunction(M)
     H = Function(M)
     n = FacetNormal(mesh2d)
-    Lh = inner(sigma, H)*dx + inner(div(sigma), grad(u0))*dx
-    Lh -= (sigma[0, 1]*n[1]*u0.dx(0) + sigma[1, 0]*n[0]*u0.dx(1))*ds
+    Lh = inner(sigma, H)*dx + inner(div(sigma), grad(uvn))*dx
+    Lh -= (sigma[0, 1]*n[1]*uvn.dx(0) + sigma[1, 0]*n[0]*uvn.dx(1))*ds
     H_prob = NonlinearVariationalProblem(Lh, H)
     H_solv = NonlinearVariationalSolver(H_prob, solver_parameters={'snes_rtol': options.snes_rtol,
                                                                    'ksp_rtol': options.ksp_rtol,
@@ -88,7 +79,7 @@ def solveSpaceship(meshd, uv_init, elev_init, tIni, tEnd, iteration, options):
     hViscosity = Constant(100.0)
 
     # TODO  COMPUTE DT SOMEWHERE, and make sure it is compatible with nbrSav and nbrSpl
-    dt = 20
+    dt = computeDtSpaceship(meshd, uv_init, options)
 
     # --- create solver ---
     solverObj = solver2d.FlowSolver2d(mesh2d, bathymetry2d)
@@ -96,7 +87,7 @@ def solveSpaceship(meshd, uv_init, elev_init, tIni, tEnd, iteration, options):
     options_solv.use_nonlinear_equations = True
     options_solv.simulation_export_time =  (tEnd-tIni)/options.nbrSav
     options_solv.simulation_end_time = tEnd - 1e-3
-    options_solv.output_directory = outputDir+".%d" % i_adapt
+    options_solv.output_directory = "output"+".%d" % iteAdapt
     options_solv.check_volume_conservation_2d = True
     options_solv.fields_to_export = ['uv_2d', 'elev_2d']
     options_solv.timestepper_type = 'PressureProjectionPicard'
@@ -115,21 +106,13 @@ def solveSpaceship(meshd, uv_init, elev_init, tIni, tEnd, iteration, options):
     elev_bc = {'elev': elev_func}
     solverObj.bnd_functions['shallow_water'] = {inflow_tag: elev_bc}
 
-
-    nbrSpl = options.nbrSpl 
-    dtSpl = float(tEnd-tIni)/(nbrSpl-1)
-
-    if options.nbrSav > 0 :
-        dtSav = float(tEnd-tIni)/(options.nbrSav)
-   
-    step = 0
-    stepSpl = 0
+    dtSpl = float(tEnd-tIni)/(options.nbrSpl-1)
     
     deltaT = 100. # of forcing data
     alpha = Constant(0)
     forcing_cur = Constant(0)
     forcing_next = Constant(0)
-
+    forcing = np.loadtxt('forcing_V6.txt', skiprows=3, usecols=(2,))
     def updateForcings(t):
         t -= dt/2.
         i = int(t/deltaT)
@@ -141,28 +124,31 @@ def solveSpaceship(meshd, uv_init, elev_init, tIni, tEnd, iteration, options):
 
         t += dt/2
         j = (t-tIni)/dtSpl
-        if  abs(j-int(j))/j < 0.0001: #TODO does that really make sense ? trying to guess is (t-tIni) is divided by dtSpl      
-            H_solv.solve()
-            computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, H, hessian, options)
-            stepSpl += 1
-    
-#    if (i_adapt == 0) :   #TODO  do at the right place !!!
-#        updateForcings(0.)
+        if abs(j)<0.0001 or abs(j-int(j))/j < 0.0001: #TODO does that really make sense ? trying to guess is (t-tIni) is divided by dtSpl
+            print("DEBUG   sampling hessian now (t=%1.2e)\n" % t)
+            try:
+                uv, elev = solverObj.timestepper.solution.split() 
+                uvnorm = sqrt(dot(uv, uv))
+                uvnorm = Function(meshd.V).interpolate(uvnorm)
+                uvn.assign(uvnorm)
+                H_solv.solve()
+                computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, H, hessian, options)
+            except:
+                pass
+                
+    if (iteAdapt == 0) :   #TODO  do at the right place !!!
+        updateForcings(0.)
     
     solverObj.assign_initial_conditions(uv=uv_init, elev=elev_init)
 
     # Update solver time parameters to start at the right time
-    if (i_adapt > 0):
-        solverObj.i_export = i_adapt*options.nbrSav 
-        solverObj.iteration = iteration_prev
-        solverObj.next_export_t = tIni + (tEnd-tIni)/nbrSav
+    if (iteAdapt > 0):
+        solverObj.i_export = iteAdapt*options.nbrSav 
+        solverObj.iteration = iteration
+        solverObj.next_export_t = tIni + (tEnd-tIni)/options.nbrSav
         solverObj.simulation_time = tIni
         for e in solverObj.exporters.values():
-            e.set_next_export_ix(solverObj.i_export)
-
-#    if options.algo == 1:
-#        H_solv.solve()
-#        computeAvgHessian(meshd, u0, t, tIni, tEnd, nbrSpl, H, hessian, options) 
+            e.set_next_export_ix(solverObj.i_export) 
 
     solverObj.iterate(update_forcings=updateForcings)
     uv_sol, elev_sol = solverObj.timestepper.solution.split()
@@ -172,9 +158,9 @@ def solveSpaceship(meshd, uv_init, elev_init, tIni, tEnd, iteration, options):
         print("ERROR  tend != tend: %1.3e %1.3e\n", solverObj.simulation_time, tEnd)
         sys.exit(1)
 
-    print "DEBUG  End solve"
+    print("DEBUG  End solve")
             
-    return [uv_sol, elev_sol, hessian, t, iteration]
+    return [uv_sol, elev_sol, hessian, solverObj.simulation_time, iteration]
 
 
 
@@ -184,24 +170,3 @@ def solIniSpaceship(meshd):
     elev_init = Expression("0.")
     
     return uv_init, elev_init
-
-
-
-def hessIniSpaceship(meshd, sol):
-    
-    mesh = meshd.mesh
-
-    M = TensorFunctionSpace(mesh, "CG", 1)
-
-    sigma = TestFunction(M)
-    H = Function(M)
-    n = FacetNormal(mesh)
-    Lh = inner(sigma, H)*dx
-    Lh += inner(div(sigma), grad(sol))*dx - (sigma[0, 1]*n[1]*sol.dx(0) + sigma[1, 0]*n[0]*sol.dx(1))*ds
-    H_prob = NonlinearVariationalProblem(Lh, H)
-    H_solv = NonlinearVariationalSolver(H_prob)
-    
-    H_solv.solve()
-    
-    return H
-

@@ -27,7 +27,7 @@ def freqRemesh(options) :
         
     while (True) :
         
-        print "\n\n\n##########  i: %d\n" % nbrAdap ; sys.stdout.flush()        
+        print("\n\n\n##########  i: %d\n" % nbrAdap ); sys.stdout.flush()        
         
         if nbrAdap == 0 :
             sol = solIniAdvec(mesh)
@@ -41,9 +41,9 @@ def freqRemesh(options) :
         
         metric = computeSteadyMetric(mesh, hessian, sol, options)
 
-        print "##### Adap procedure started "; sys.stdout.flush()
+        print("##### Adap procedure started "); sys.stdout.flush()
         newmesh = adaptInternal(mesh, metric)
-        print "##### Adap procedure finished"; sys.stdout.flush()
+        print("##### Adap procedure finished"); sys.stdout.flush()
         writeGmf(newmesh.mesh, 1, "boundary_ids", "newmesh", None, None, None, newmesh.section)
 
         newsol = Function(newmesh.V)
@@ -74,4 +74,4 @@ if __name__ == '__main__':
 
     tend = time.clock()
     ttotal = time.gmtime(tend-tini)
-    print "#####  TOTAL TIME : %ddays %dhours %dmin %dsec" %(ttotal[2]-1, ttotal[3], ttotal[4], ttotal[5])
+    print("#####  TOTAL TIME : %ddays %dhours %dmin %dsec" %(ttotal[2]-1, ttotal[3], ttotal[4], ttotal[5]))

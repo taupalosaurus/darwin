@@ -26,7 +26,7 @@ class Meshd() :
                 self.altMin.interpolate(2*CellVolume(self.mesh)/MaxCellEdgeLength(self.mesh))
             else :
                 self.altMin.interpolate(Circumradius(self.mesh)*MinCellEdgeLength(self.mesh)/MaxCellEdgeLength(self.mesh))
-                print "#### WARNING minimal altitude computed very approximately in 3D"
+                print("#### WARNING minimal altitude computed very approximately in 3D")
 #                self.altMin.interpolate(6*CellVolume(self.mesh)/MaxCellFacetArea(self.mesh))
         
         
